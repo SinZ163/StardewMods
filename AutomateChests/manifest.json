@@ -1,7 +1,7 @@
 {
   "Name": "AutomateChests",
   "Author": "SinZ",
-  "Version": "1.0.0",
+  "Version": "1.1.0",
   "Description": "Changes Automate to only use this mods defined chest instead of normal chests for storage",
   "UniqueID": "SinZ.AutomateChests",
   "EntryDll": "AutomateChests.dll",
