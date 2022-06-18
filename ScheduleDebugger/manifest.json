@@ -1,0 +1,10 @@
+﻿{
+  "Name": "ScheduleDebugger",
+  "Author": "SinZ",
+  "Version": "0.1.0-alpha",
+  "Description": "Visualizes Schedule information on the map to assist NPC creators",
+  "UniqueID": "SinZ.ScheduleDebugger",
+  "EntryDll": "ScheduleDebugger.dll",
+  "MinimumApiVersion": "3.0.0",
+  "UpdateKeys": [ "Nexus:-1" ]
+}
