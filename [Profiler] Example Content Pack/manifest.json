@@ -1,0 +1,12 @@
+{
+    "Name": "Example Content Pack",
+    "Author": "SinZ",
+    "Version": "1.0.0",
+    "Description": "Demonstrates how Content Packs can add logging to existing types",
+    "UniqueID": "SinZ.Profiler.ExamplePack",
+    "MinimumApiVersion": "3.15.0",
+    "UpdateKeys": [ "Nexus:12135@PackExample" ],
+    "ContentPackFor": {
+        "UniqueID": "SinZ.Profiler"
+    }
+  }

@@ -3,11 +3,15 @@
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
     <EnableHarmony>true</EnableHarmony>
+    <RootNamespace>Profiler.ContentPatcher</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Profiler\Profiler.csproj" />
     <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.0.1" />
-    <Reference Include="Newtonsoft.Json" HintPath="$(GamePath)\smapi-internal\Newtonsoft.Json.dll" />
+    <Reference Include="ContentPatcher">
+      <HintPath>$(GamePath)\Mods\ContentPatcher\ContentPatcher.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
   </ItemGroup>
-
 </Project>

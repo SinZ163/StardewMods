@@ -10,5 +10,7 @@ namespace Profiler
     {
         public int BigLoopThreshold { get; set; } = 100;
         public int EventThreshold { get; set; } = 10;
+
+        public double LoggerDurationThreshold { get; set; } = 0.01;
     }
 }

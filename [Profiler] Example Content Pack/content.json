@@ -1,0 +1,29 @@
+{
+    "Format": "1.0",
+    "Entries": [
+        {
+            "Type": "Duration",
+            "TargetType": "StardewValley.GameLocation,Stardew Valley",
+            "TargetMethod": "reloadMap",
+            "Details": {
+                "Type": "Field",
+                "Name": "mapPath"
+            }
+        },
+        {
+            "Type": "Duration",
+            "TargetType": "StardewValley.GameLocation,Stardew Valley",
+            "TargetMethod": "loadObjects",
+            "Details": {
+                "Type": "Field",
+                "Name": "mapPath"
+            }
+        },
+        {
+            "Type": "Duration",
+            "TargetType": "TehPers.FishingOverhaul.Services.FishingApi,TehPers.FishingOverhaul",
+            "TargetMethod": "ReloadIfRequested",
+            "ConditionalMod": "TehPers.FishingOverhaul"
+        }
+    ]
+}
