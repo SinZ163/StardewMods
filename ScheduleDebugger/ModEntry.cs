@@ -20,7 +20,7 @@ namespace ScheduleDebugger
     }
     internal record TileInfo(Vector2 coord, TileDirection fromSide, TileDirection toSide);
     internal record RenderTileInfo(TileInfo tileInfo, int fromWidth, int fromOffset, int toWidth, int toOffset, List<(Color color, NPC npc, int time, DebugSchedule schedule)> schedules, Color color);
-    internal record DebugSchedule(List<TileInfo> route, int facingDirection, string endOfRouteBehavior, string endOfRouteMessage);
+    internal record DebugSchedule(List<TileInfo> route, int facingDirection, string endOfRouteBehavior, string endOfRouteMessage, string scheduleName);
     internal class ModEntry : Mod
     {
         private static readonly Lazy<Texture2D> LazyPixel = new(() =>
@@ -235,7 +235,7 @@ namespace ScheduleDebugger
                                                 {
                                                     Schedules[currentLocation][npc] = new();
                                                 }
-                                                Schedules[currentLocation][npc][time] = new DebugSchedule(route, scheduleDescription.facingDirection, scheduleDescription.endOfRouteBehavior, scheduleDescription.endOfRouteMessage);
+                                                Schedules[currentLocation][npc][time] = new DebugSchedule(route, scheduleDescription.facingDirection, scheduleDescription.endOfRouteBehavior, scheduleDescription.endOfRouteMessage, scheduleName);
                                                 route = new List<TileInfo>(scheduleDescription.route.Count - route.Count);
                                                 currentLocation = newLocation;
                                             }
@@ -245,7 +245,7 @@ namespace ScheduleDebugger
                                     {
                                         Schedules[currentLocation][npc] = new();
                                     }
-                                    Schedules[currentLocation][npc][time] = new DebugSchedule(route, scheduleDescription.facingDirection, scheduleDescription.endOfRouteBehavior, scheduleDescription.endOfRouteMessage);
+                                    Schedules[currentLocation][npc][time] = new DebugSchedule(route, scheduleDescription.facingDirection, scheduleDescription.endOfRouteBehavior, scheduleDescription.endOfRouteMessage, scheduleName);
                                 }
                             }
                         }
@@ -348,6 +348,27 @@ namespace ScheduleDebugger
         private void Display_Rendered(object sender, StardewModdingAPI.Events.RenderedEventArgs e)
         {
             if (!IsActive) return;
+            if (Game1.activeClickableMenu != null) return;
+            if (Game1.eventUp) return;
+
+            if (RenderTiles.TryGetValue(Game1.player.currentLocation, out var tileInfo))
+            {
+                if (tileInfo.TryGetValue(Game1.currentCursorTile, out var renderInfo))
+                {
+                    var sb = new StringBuilder();
+                    sb.AppendLine($"@ {Game1.currentCursorTile.X},{Game1.currentCursorTile.Y} ({Game1.player.currentLocation.Name})");
+                    foreach(var route in renderInfo)
+                    {
+                        foreach(var schedule in route.schedules)
+                        {
+                            sb.AppendLine($"{schedule.time:D4}-{schedule.npc.displayName} ({schedule.schedule.scheduleName})");
+                        }
+                    }
+                    Vector2 tooltipPosition = new Vector2(Game1.getMouseX(), Game1.getMouseY()) + new Vector2(Game1.tileSize / 2f);
+                    CommonHelper.DrawHoverBox(e.SpriteBatch, sb.ToString(), tooltipPosition, Game1.uiViewport.Width - tooltipPosition.X - Game1.tileSize / 2f);
+                }
+            }
+
         }
 
         private void DrawHorizontal(SpriteBatch spriteBatch, Color color, Vector2 pixel, int offset, int lineWidth, double length = Game1.tileSize, double horizontalOffset = 0)
@@ -432,7 +453,6 @@ namespace ScheduleDebugger
                                 case (TileDirection.Middle, TileDirection.Up):
                                     DrawVertical(e.SpriteBatch, color, pixel, renderTile.toOffset, renderTile.toWidth, Game1.tileSize / 2);
                                     break;
-                                // TODO: figure out how to make straight lines convert from 'from' units to 'to' units
                                 case (TileDirection.Left, TileDirection.Right):
                                     DrawHorizontal(e.SpriteBatch, color, pixel, renderTile.fromOffset, renderTile.fromWidth, Game1.tileSize / 2);
                                     DrawVerticalBridge(e.SpriteBatch, color, pixel, renderTile);
