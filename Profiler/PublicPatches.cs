@@ -10,10 +10,12 @@ using System.Threading.Tasks;
 namespace Profiler
 {
     internal record InternalDetailsEntry(DetailsType Type, string Name);
+    internal record InternalArgumentDetailsEntry(DetailsType Type, string Name, int Index) : InternalDetailsEntry(Type, Name);
     internal enum DetailsType
     {
         Property,
-        Field
+        Field,
+        Argument,
     }
 
     public static class PublicPatches
@@ -37,11 +39,18 @@ namespace Profiler
         {
             if (Enum.TryParse<DetailsType>(detailsEntry.Type, out var detailsType))
             {
-                DetailsMap.Add(method, new(detailsType, detailsEntry.Name));
+                if (detailsType == DetailsType.Argument && detailsEntry.Index != null)
+                {
+                    DetailsMap.Add(method, new InternalArgumentDetailsEntry(detailsType, detailsEntry.Name, detailsEntry.Index.Value));
+                }
+                else
+                {
+                    DetailsMap.Add(method, new(detailsType, detailsEntry.Name));
+                }
             }
         }
 
-        public static string GetGenericDurationDetails(MethodBase __originalMethod, object __instance)
+        public static string GetGenericDurationDetails(MethodBase __originalMethod, object __instance, object[]? __args = null)
         {
             if (DetailsMap.TryGetValue(__originalMethod, out var details))
             {
@@ -51,11 +60,28 @@ namespace Profiler
                         return __originalMethod.DeclaringType.GetProperty(details.Name)?.GetValue(__instance)?.ToString();
                     case DetailsType.Field:
                         return __originalMethod.DeclaringType.GetField(details.Name)?.GetValue(__instance)?.ToString();
+                    case DetailsType.Argument:
+                        if (__args?.Length > 0 && details is InternalArgumentDetailsEntry argDetails && argDetails.Index < __args.Length)
+                        {
+                            return __args[argDetails.Index].ToString();
+                        }
+                        goto case default;
                     default:
                         return string.Empty;
                 }
             }
             return string.Empty;
+        }
+        public static void GenericDurationPrefixWithArgs(out Stopwatch __state, MethodBase __originalMethod, object __instance, object[] __args)
+        {
+            __state = Stopwatch.StartNew();
+            var assembly = Assembly.GetAssembly(__originalMethod.DeclaringType);
+            if (!AssemblyMap.TryGetValue(assembly.GetName().Name, out var modId))
+            {
+                modId = assembly.GetName().Name;
+                // TODO: Warn that assembly was not mapped
+            }
+            API.Push(new EventDurationMetadata(modId, String.Join(String.Empty, modId, '/', __originalMethod.DeclaringType.Name, '.', __originalMethod.Name), GetGenericDurationDetails(__originalMethod, __instance, __args), -1, new()));
         }
 
         public static void GenericDurationPrefix(out Stopwatch __state, MethodBase __originalMethod, object __instance)

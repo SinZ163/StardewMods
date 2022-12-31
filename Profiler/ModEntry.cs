@@ -60,6 +60,7 @@ namespace Profiler
                     Monitor.Log($"Content Pack {cp.Manifest.Name}: Unreadable content.json", LogLevel.Error);
                     continue;
                 }
+                // TODO: Do this better
                 if (cpData.Format != "1.0")
                 {
                     Monitor.Log($"Content Pack {cp.Manifest.Name}: Unknown Format {cpData.Format}", LogLevel.Error);
@@ -81,7 +82,7 @@ namespace Profiler
                             continue;
                         }
                     }
-                    var methodBase = ProfilerAPI.AddGenericDurationPatch(entry.TargetType, entry.TargetMethod);
+                    var methodBase = ProfilerAPI.AddGenericDurationPatch(entry.TargetType, entry.TargetMethod, entry.Details?.Type);
                     if (entry.Details != null && methodBase != null)
                     {
                         PublicPatches.AddDetailsEntry(methodBase, entry.Details);

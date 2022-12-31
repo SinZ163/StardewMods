@@ -21,7 +21,7 @@ namespace Profiler
         public void Push(EventMetadata eventDetails);
         public void Pop(Func<EventMetadata, EventMetadata> modifier);
 
-        public MethodBase AddGenericDurationPatch(string type, string method);
+        public MethodBase AddGenericDurationPatch(string type, string method, string detailsType = null);
     }
 
     internal record ProfileLoggerRow(double OccuredAt, object Metadata);
@@ -84,7 +84,7 @@ namespace Profiler
             }
         }
 
-        public MethodBase AddGenericDurationPatch(string type, string method)
+        public MethodBase AddGenericDurationPatch(string type, string method, string? detailType = null)
         {
             try
             {
@@ -100,9 +100,14 @@ namespace Profiler
                     Monitor.Log($"Type {type} does not exist and therefore can't add duration monitoring.", LogLevel.Error);
                     return null;
                 }
+                HarmonyMethod prefix = detailType switch
+                {
+                    nameof(DetailsType.Argument) => new HarmonyMethod(typeof(PublicPatches), nameof(PublicPatches.GenericDurationPrefixWithArgs)),
+                    _ => new HarmonyMethod(typeof(PublicPatches), nameof(PublicPatches.GenericDurationPrefix)),
+                };
                 Harmony.Patch(
                     original: originalMethod,
-                    prefix: new HarmonyMethod(typeof(PublicPatches), nameof(PublicPatches.GenericDurationPrefix)),
+                    prefix,
                     postfix: new HarmonyMethod(typeof(PublicPatches), nameof(PublicPatches.GenericDurationPostfix))
                 );
                 return originalMethod;

@@ -41,6 +41,7 @@ namespace Profiler
     {
         public string? Type { get; set; }
         public string? Name { get; set;  }
+        public int? Index { get; set; }
 
         [JsonConstructor]
         public ProfilerContentPackDetailEntry()
