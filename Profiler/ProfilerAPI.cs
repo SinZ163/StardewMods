@@ -12,19 +12,49 @@ using System.Threading.Tasks;
 
 namespace Profiler
 {
-    public record EventMetadata(string ModId, string EventType, string Details, List<object> InnerDetails);
+    public record EventMetadata(string ModId, string EventType, string Details, List<object> InnerDetails, string Type = "Base");
     internal record EventEntry(double At, EventMetadata Entry);
-    public record EventDurationMetadata(string ModId, string EventType, string Details, double Duration, List<object> InnerDetails) : EventMetadata(ModId, EventType, Details, InnerDetails);
+    public record EventDurationMetadata(string ModId, string EventType, string Details, double Duration, List<object> InnerDetails) : EventMetadata(ModId, EventType, Details, InnerDetails, "Duration");
+    public record EventTraceMetadata(string ModId, string EventType, string Details, string ExceptionType, string ExceptionMessage, List<object> InnerDetails) : EventMetadata(ModId, EventType, Details, InnerDetails, "Trace");
 
     public interface IProfilerAPI
     {
-        public void Push(EventMetadata eventDetails);
+        public void Push(EventMetadata eventDetails, bool important = false);
         public void Pop(Func<EventMetadata, EventMetadata> modifier);
+        public void Pop();
+
+        public IDisposable RecordSection(string ModId, string EventType, string Details);
 
         public MethodBase AddGenericDurationPatch(string type, string method, string detailsType = null);
     }
 
     internal record ProfileLoggerRow(double OccuredAt, object Metadata);
+
+    internal class RecordSectionBlock : IDisposable
+    {
+        private readonly IProfilerAPI api;
+        private readonly Stopwatch timer;
+
+        public RecordSectionBlock(IProfilerAPI api, EventMetadata eventMetadata)
+        {
+            this.api = api;
+            this.timer = Stopwatch.StartNew();
+            this.api.Push(eventMetadata);
+        }
+
+        public void Dispose()
+        {
+            timer.Stop();
+            this.api.Pop(metadata =>
+            {
+                if (metadata is EventDurationMetadata durationMetadata)
+                {
+                    metadata = durationMetadata with { Duration = timer.Elapsed.TotalMilliseconds };
+                }
+                return metadata;
+            });
+        }
+    }
 
     public class ProfilerAPI : IProfilerAPI
     {
@@ -34,6 +64,7 @@ namespace Profiler
         public Stopwatch Timer { get; }
 
         internal ConcurrentStack<EventEntry> EventMetadata { get; private set; }
+        internal bool EventHasImportance { get; private set; }
 
         internal ProfilerAPI(ModConfig config, Harmony harmony, Stopwatch timer, IMonitor monitor)
         {
@@ -43,6 +74,7 @@ namespace Profiler
             Timer = timer;
 
             EventMetadata = new();
+            EventHasImportance = false;
         }
 
         public void Write(EventMetadata eventDetails)
@@ -59,10 +91,11 @@ namespace Profiler
                     return;
                 }
                 Monitor.Log($"[RawLog] {JsonSerializer.Serialize(new ProfileLoggerRow(at, eventDetails))}", LogLevel.Trace);
+                EventHasImportance = false;
             }
             else if (EventMetadata.TryPeek(out var outerMetadata))
             {
-                if (eventDetails is EventDurationMetadata durationMetadata && durationMetadata.Duration < Config.LoggerDurationInnerThreshold)
+                if (!EventHasImportance && eventDetails is EventDurationMetadata durationMetadata && durationMetadata.Duration < Config.LoggerDurationInnerThreshold)
                 {
                     return;
                 }
@@ -70,9 +103,13 @@ namespace Profiler
             }
         }
 
-        public void Push(EventMetadata eventDetails)
+        public void Push(EventMetadata eventDetails, bool important = false)
         {
             EventMetadata.Push(new(Timer.Elapsed.TotalMilliseconds, eventDetails));
+            if (important)
+            {
+                EventHasImportance = true;
+            }
         }
 
         public void Pop(Func<EventMetadata, EventMetadata> modifier)
@@ -82,6 +119,19 @@ namespace Profiler
                 var metadata = modifier(metadataPair.Entry);
                 Write(metadataPair.At, metadata);
             }
+        }
+        public void Pop()
+        {
+            if (EventMetadata.TryPop(out var metadataPair))
+            {
+                Write(metadataPair.At, metadataPair.Entry);
+            }
+        }
+
+        public IDisposable RecordSection(string ModId, string EventType, string Details)
+        {
+            var eventDetails = new EventDurationMetadata(ModId, EventType, Details, -1, new ());
+            return new RecordSectionBlock(this, eventDetails);
         }
 
         public MethodBase AddGenericDurationPatch(string type, string method, string? detailType = null)
@@ -97,7 +147,7 @@ namespace Profiler
                 var originalMethod = AccessTools.Method(typeInstance, method);
                 if (originalMethod == null)
                 {
-                    Monitor.Log($"Type {type} does not exist and therefore can't add duration monitoring.", LogLevel.Error);
+                    Monitor.Log($"Method {method} on type {type} does not exist and therefore can't add duration monitoring.", LogLevel.Error);
                     return null;
                 }
                 HarmonyMethod prefix = detailType switch
@@ -115,6 +165,39 @@ namespace Profiler
             catch (Exception ex)
             {
                 Monitor.Log($"Tried to add duration monitoring to {type}.{method} but {ex.GetType().Name} happened. ({ex.Message})", LogLevel.Error);
+                return null;
+            }
+        }
+        public MethodBase AddGenericTracePatch(string type, string method, string? detailType = null)
+        {
+            try
+            {
+                var typeInstance = Type.GetType(type);
+                if (typeInstance == null)
+                {
+                    Monitor.Log($"Type {type} does not exist and therefore can't add duration monitoring.", LogLevel.Error);
+                    return null;
+                }
+                var originalMethod = AccessTools.Method(typeInstance, method);
+                if (originalMethod == null)
+                {
+                    Monitor.Log($"Type {type} does not exist and therefore can't add duration monitoring.", LogLevel.Error);
+                    return null;
+                }
+                HarmonyMethod finalizer = detailType switch
+                {
+                    nameof(DetailsType.Argument) => new HarmonyMethod(typeof(PublicPatches), nameof(PublicPatches.GenericTraceFinalizerWithArgs)),
+                    _ => new HarmonyMethod(typeof(PublicPatches), nameof(PublicPatches.GenericTraceFinalizer)),
+                };
+                Harmony.Patch(
+                    original: originalMethod,
+                    finalizer: finalizer
+                );
+                return originalMethod;
+            }
+            catch (Exception ex)
+            {
+                Monitor.Log($"Tried to add trace monitoring to {type}.{method} but {ex.GetType().Name} happened. ({ex.Message})", LogLevel.Error);
                 return null;
             }
         }

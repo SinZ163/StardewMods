@@ -38,7 +38,7 @@ namespace Profiler
 
             var harmony = new HarmonyLib.Harmony(this.ModManifest.UniqueID);
             ProfilerAPI = new ProfilerAPI(Config, harmony, timer, Monitor);
-            PublicPatches.Initialize(ProfilerAPI, harmony);
+            PublicPatches.Initialize(ProfilerAPI, harmony, Monitor);
             ManagedEventPatches.Initialize(Monitor, this.Config, ProfilerAPI, harmony);
             this.timer.Restart();
             ProfilerAPI.Write(new EventMetadata(this.ModManifest.UniqueID, String.Join(separator: '/', this.ModManifest.UniqueID, "Init"), DateTimeOffset.Now.ToString("o", System.Globalization.CultureInfo.InvariantCulture), new()));
@@ -69,11 +69,6 @@ namespace Profiler
                 
                 foreach(var entry in cpData.Entries)
                 {
-                    if (entry.Type != "Duration")
-                    {
-                        Monitor.Log($"Content Pack {cp.Manifest.Name}: Unknown ProfilerType {entry.Type}", LogLevel.Warn);
-                        continue;
-                    }
                     if (!string.IsNullOrWhiteSpace(entry.ConditionalMod))
                     {
                         if (!Helper.ModRegistry.IsLoaded(entry.ConditionalMod))
@@ -82,13 +77,33 @@ namespace Profiler
                             continue;
                         }
                     }
-                    var methodBase = ProfilerAPI.AddGenericDurationPatch(entry.TargetType, entry.TargetMethod, entry.Details?.Type);
-                    if (entry.Details != null && methodBase != null)
+                    switch (entry.Type)
                     {
-                        PublicPatches.AddDetailsEntry(methodBase, entry.Details);
+                        case "Duration":
+                            {
+                                var methodBase = ProfilerAPI.AddGenericDurationPatch(entry.TargetType, entry.TargetMethod, entry.Details?.Type);
+                                if (entry.Details != null && methodBase != null)
+                                {
+                                    PublicPatches.AddDetailsEntry(methodBase, entry.Details);
+                                }
+                            }
+                            break;
+                        case "Trace":
+                            {
+                                var methodBase = ProfilerAPI.AddGenericTracePatch(entry.TargetType, entry.TargetMethod, entry.Details?.Type);
+                                if (entry.Details != null && methodBase != null)
+                                {
+                                    PublicPatches.AddDetailsEntry(methodBase, entry.Details);
+                                }
+                            }
+                            break;
+                        default:
+                            Monitor.Log($"Content Pack {cp.Manifest.Name}: Unknown ProfilerType {entry.Type}", LogLevel.Warn);
+                            break;
                     }
                 }
             }
+
         }
 
         public override object GetApi()
@@ -123,7 +138,7 @@ namespace Profiler
         [EventPriority((EventPriority)int.MaxValue)]
         private void Player_WarpedFast(object sender, WarpedEventArgs e)
         {
-            Monitor.Log($"[{timer.Elapsed.TotalMilliseconds:N}][Fast] Warped {e.OldLocation} -> {e.NewLocation} ({Game1.timeOfDay:D4})", LogLevel.Info);
+            Monitor.Log($"[{timer.Elapsed.TotalMilliseconds:N}][Fast] Warped {e.OldLocation.NameOrUniqueName} -> {e.NewLocation.NameOrUniqueName} ({Game1.timeOfDay:D4})", LogLevel.Info);
         }
 
         [EventPriority((EventPriority)int.MinValue)]
@@ -153,7 +168,7 @@ namespace Profiler
         [EventPriority((EventPriority)int.MinValue)]
         private void Player_WarpedSlow(object sender, WarpedEventArgs e)
         {
-            Monitor.Log($"[{timer.Elapsed.TotalMilliseconds:N}][Slow] Warped {e.OldLocation} -> {e.NewLocation} ({Game1.timeOfDay:D4})", LogLevel.Info);
+            Monitor.Log($"[{timer.Elapsed.TotalMilliseconds:N}][Slow] Warped {e.OldLocation.NameOrUniqueName} -> {e.NewLocation.NameOrUniqueName} ({Game1.timeOfDay:D4})", LogLevel.Info);
         }
     }
 }
