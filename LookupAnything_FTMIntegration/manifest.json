@@ -1,0 +1,20 @@
+{
+  "Name": "Lookup Anything - FTM Integration",
+  "Author": "SinZ",
+  "Version": "1.0.0",
+  "Description": "Adds information to items obtainable via FTM mechanics",
+  "UniqueID": "SinZ.LookupAnything_FTMIntegration",
+  "EntryDll": "LookupAnything_FTMIntegration.dll",
+  "MinimumApiVersion": "3.14.0",
+  "UpdateKeys": [ "Nexus:???" ],
+  "Dependencies": [
+    {
+      "UniqueID": "Pathoschild.LookupAnything",
+      "MinimumVersion": "1.37.2"
+    },
+    {
+      "UniqueID": "Esca.FarmTypeManager",
+      "MinimumVersion": "1.16.0"
+    }
+  ]
+}
