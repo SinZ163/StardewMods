@@ -1,0 +1,17 @@
+{
+  /*
+   | This file is automatically updated by ModManifestBuilder
+   | when the project is compiled.
+   | 
+   | Changes made to this file may be overwritten.
+   | 
+   */
+  "$schema": "https://smapi.io/schemas/manifest.json",
+  "UniqueID": "SinZ.SixSupport",
+  "Name": "SinZational Six Suport",
+  "Author": "SinZ",
+  "Version": "0.0.1",
+  "Description": "A mod that impersonates older mod frameworks that are no longer required to maintain backwards compatibility.",
+  "MinimumApiVersion": "3.18",
+  "EntryDll": "SinZationalSixSupport.dll"
+}
