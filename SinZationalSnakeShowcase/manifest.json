@@ -1,0 +1,12 @@
+{
+  "$schema": "https://smapi.io/schemas/manifest.json",
+  "UniqueID": "SinZ.SnakeShowcase",
+  "Name": "SinZational Snake Showcase",
+  "Author": "SinZ",
+  "Version": "0.0.1",
+  "Description": "An example mod that shows that python can be a real SMAPI mod.",
+  "MinimumApiVersion": "3.18",
+  "ContentPackFor": {
+    "UniqueID": "SinZ.SnakeSupport"
+  }
+}

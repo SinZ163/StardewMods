@@ -1,0 +1,17 @@
+{
+  /*
+   | This file is automatically updated by ModManifestBuilder
+   | when the project is compiled.
+   | 
+   | Changes made to this file may be overwritten.
+   | 
+   */
+  "$schema": "https://smapi.io/schemas/manifest.json",
+  "UniqueID": "SinZ.SnakeSupport",
+  "Name": "SinZational Snake Suport",
+  "Author": "SinZ",
+  "Version": "0.0.1",
+  "Description": "A mod that allows 'content packs' written in Python to be loaded as real SMAPI mods.",
+  "MinimumApiVersion": "3.18",
+  "EntryDll": "SinZationalSnakeSupport.dll"
+}
