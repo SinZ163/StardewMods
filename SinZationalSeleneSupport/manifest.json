@@ -7,11 +7,11 @@
    | 
    */
   "$schema": "https://smapi.io/schemas/manifest.json",
-  "UniqueID": "SinZ.SceneSetup",
-  "Name": "SinZational Scene Setup",
+  "UniqueID": "SinZ.SeleneSupport",
+  "Name": "SinZational Selene Suport",
   "Author": "SinZ",
-  "Version": "0.0.1-Debug",
-  "Description": "A mod that exposes commands to autoplay events for a given or all locations",
+  "Version": "0.0.1",
+  "Description": "A mod that allows 'content packs' written in Lua to be loaded as real SMAPI mods.",
   "MinimumApiVersion": "3.18",
-  "EntryDll": "SinZational Scene Setup.dll"
+  "EntryDll": "SinZationalSeleneSupport.dll"
 }

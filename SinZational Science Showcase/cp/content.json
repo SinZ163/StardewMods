@@ -1,0 +1,14 @@
+{
+  "Format": "1.28.0",
+  "Changes": [
+    {
+      "Action": "EditData",
+      "Target": "Data/Achievements",
+      "Fields": {
+        "1": {
+          "0": "Achievement name"
+        }
+      }
+    }
+  ]
+}

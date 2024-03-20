@@ -1,0 +1,16 @@
+{
+  "Name": "SinZational Science Showcase",
+  "Author": "SinZ",
+  "Version": "0.1.0-alpha",
+  "Description": "Visualizes Schedule information on the map to assist NPC creators",
+  "UniqueID": "SinZ.Science",
+  "EntryDll": "SinZational Science Showcase.dll",
+  "MinimumApiVersion": "3.0.0",
+  "UpdateKeys": [ "Nexus:-1" ],
+  "Dependencies": [
+    {
+      "UniqueID": "Pathoschild.ContentPatcher",
+      "IsRequired": false
+    }
+  ]
+}
