@@ -11,6 +11,7 @@ using StardewValley.Menus;
 using StardewValley.Network;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Xml.Linq;
 using xTile.Dimensions;
 using static StardewValley.Minigames.MineCart;
 
@@ -33,7 +34,6 @@ public class ModEntry : Mod
         Patches.Init(harmony, helper, Monitor);
         /**
          * TODO:
-         * Changes to farmhouse front door to allow elevator style selection of which interior to go to
          * 
          * Allow stable buildings up to player instance count
          * 
@@ -114,6 +114,14 @@ public static class Patches
     {
         Patches.monitor = monitor;
 
+        var stardewLocationsName = AccessTools.Method("StardewLocations.StardewLocations:getLocationName");
+        if (stardewLocationsName != null)
+        {
+            harmony.Patch(stardewLocationsName, prefix: new HarmonyMethod(typeof(Patches).GetMethod(nameof(StardewLocations__getLocationName__Prefix))));
+        }
+
+        harmony.Patch(AccessTools.Method(typeof(Farm), nameof(Farm.UnsetFarmhouseValues)), postfix: new HarmonyMethod(typeof(Patches).GetMethod(nameof(Farm__UnsetFarmhouseValues__Postfix))));
+        harmony.Patch(AccessTools.Method(typeof(GameLocation), nameof(GameLocation.updateWarps)), postfix: new HarmonyMethod(typeof(Patches).GetMethod(nameof(GameLocation__updateWarps__Postfix))));
         harmony.Patch(AccessTools.Method(typeof(GameLocation), nameof(GameLocation.performAction), new Type[] { typeof(string[]), typeof(Farmer), typeof(Location) }), transpiler: new HarmonyMethod(typeof(Patches).GetMethod(nameof(GameLocation__performAction__Transpiler))));
         harmony.Patch(AccessTools.Method(typeof(Building), nameof(Building.OnUseHumanDoor)), postfix: new HarmonyMethod(typeof(Patches).GetMethod(nameof(Building__OnUseHumanDoor__Postfix))));
         harmony.Patch(AccessTools.Method(typeof(FarmhandMenu.FarmhandSlot), nameof(FarmhandMenu.FarmhandSlot.Activate)), transpiler: new HarmonyMethod(typeof(Patches).GetMethod(nameof(FarmhandSlot__Activate__Transpiler))));
@@ -122,6 +130,53 @@ public static class Patches
         harmony.Patch(AccessTools.Method(typeof(GameServer), nameof(GameServer.sendAvailableFarmhands)), transpiler: new HarmonyMethod(typeof(Patches).GetMethod(nameof(GameServer__sendAvailableFarmhands__Transpiler))));
         harmony.Patch(AccessTools.Method(typeof(NetWorldState), nameof(NetWorldState.TryAssignFarmhandHome)), prefix: new HarmonyMethod(typeof(Patches).GetMethod(nameof(NetWorldState__TryAssignFarmhandHome__Prefix))));
         harmony.Patch(AccessTools.Method(typeof(SaveGame), nameof(SaveGame.loadDataToLocations)), transpiler: new HarmonyMethod(typeof(Patches).GetMethod(nameof(SaveGame__loadDataToLocations__Transpiler))));
+    }
+
+    public static void StardewLocations__getLocationName__Prefix(ref string name, ref GameLocation loc)
+    {
+        if (loc is Cabin)
+        {
+            name = "Cabin";
+        }
+    }
+
+    public static void Farm__UnsetFarmhouseValues__Postfix()
+    {
+        if (Game1.IsClient) return;
+        foreach (var location in Game1.locations)
+        {
+            if (location is Cabin)
+            {
+                foreach (var warp in location.warps)
+                {
+                    if (warp.TargetName == "Farm")
+                    {
+                        var coords = Game1.getFarm().GetMainFarmHouseEntry();
+                        warp.TargetX = coords.X;
+                        warp.TargetY = coords.Y;
+                    }
+                }
+            }
+        }
+    }
+
+    public static void  GameLocation__updateWarps__Postfix(GameLocation __instance)
+    {
+        if (Game1.IsClient) return;
+        // If the farm isn't loaded, then don't handle it. It is done anyway via Farm.UnsetFarmhouseValues in loading usecases
+        if (Game1.getLocationFromNameInLocationsList("Farm") == null) return;
+        if (__instance is Cabin)
+        {
+            foreach (var warp in __instance.warps)
+            {
+                if (warp.TargetName == "Farm")
+                {
+                    var coords = Game1.getFarm().GetMainFarmHouseEntry();
+                    warp.TargetX = coords.X;
+                    warp.TargetY = coords.Y;
+                }
+            }
+        }
     }
 
     public static IEnumerable<CodeInstruction> GameLocation__performAction__Transpiler(ILGenerator generator, IEnumerable<CodeInstruction> instructions)

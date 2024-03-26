@@ -39,12 +39,25 @@ public class ModEntry : Mod
         var spousePatioCount = 0;
         SpousePatioAllocations.Clear();
         SpousePatioStandingSpots.Clear();
-        var spouses = Game1.getAllFarmers().Where(f => f != Game1.MasterPlayer).Select(f => f.spouse).Where(s => s != null);
+        var spouses = new HashSet<string>();
+        foreach (var farmer in Game1.getAllFarmers())
+        {
+            foreach (var npc in farmer.friendshipData.Keys)
+            {
+                if (farmer.friendshipData[npc].IsMarried())
+                {
+                    spouses.Add(npc);
+                }
+            }
+        }
+        // MasterPlayer spouse is handled via vanilla logic, let it stand.
+        if (Game1.MasterPlayer.spouse != null)
+        {
+            spouses.Remove(Game1.MasterPlayer.spouse);
+        }
 
         var unallocatedPatios = new List<Building>();
         var unallocatedSpouses = new List<string>(spouses);
-
-        // TODO: Handle divorce
 
         Utility.ForEachBuilding(b =>
         {
@@ -73,7 +86,7 @@ public class ModEntry : Mod
             SpousePatioAllocations[spouse] = patio;
         }
         // Force Farm to be reloaded
-        Monitor.Log("Invalidating Farm: " + Game1.getFarm().Map.assetPath, LogLevel.Alert);
+        Monitor.Log("Invalidating Farm: " + Game1.getFarm().Map.assetPath);
         Helper.GameContent.InvalidateCache(Game1.getFarm().Map.assetPath);
     }
 
@@ -110,7 +123,7 @@ public class ModEntry : Mod
         }
     }
 
-    private void World_BuildingListChanged(object sender, StardewModdingAPI.Events.BuildingListChangedEventArgs e)
+    private void World_BuildingListChanged(object sender, BuildingListChangedEventArgs e)
     {
         var addedSpousePatios = e.Added.Where(b => b.buildingType.Value == SpousePatioBuildingId);
         var removedSpousePatios = e.Removed.Where(b => b.buildingType.Value == SpousePatioBuildingId);
@@ -120,7 +133,7 @@ public class ModEntry : Mod
         }
     }
 
-    private void Content_AssetRequested(object sender, StardewModdingAPI.Events.AssetRequestedEventArgs e)
+    private void Content_AssetRequested(object sender, AssetRequestedEventArgs e)
     {
         if (e.NameWithoutLocale.IsEquivalentTo("Data/Buildings"))
         {
@@ -186,6 +199,22 @@ public static class HarmonyPatches
         harmony.Patch(AccessTools.Method(typeof(Farm), nameof(Farm.OnMapLoad)), postfix: new HarmonyMethod(typeof(HarmonyPatches).GetMethod(nameof(OnMapLoad__Postfix))));
         harmony.Patch(AccessTools.Method(typeof(Farmer), nameof(Farmer.doDivorce)), prefix: new HarmonyMethod(typeof(HarmonyPatches).GetMethod(nameof(doDivorce__Prefix))), postfix: new HarmonyMethod(typeof(HarmonyPatches).GetMethod(nameof(doDivorce__Postfix))));
         harmony.Patch(AccessTools.Method(typeof(Game1), nameof(Game1.OnDayStarted)), prefix: new HarmonyMethod(typeof(HarmonyPatches).GetMethod(nameof(OnDayStarted__Prefix))));
+
+        var polyNPCPatch = AccessTools.Method("PolyamorySweetLove.NPCPatches:NPC_setUpForOutdoorPatioActivity_Prefix");
+        if (polyNPCPatch != null)
+        {
+            harmony.Patch(polyNPCPatch, transpiler: new HarmonyMethod(typeof(HarmonyPatches).GetMethod(nameof(PolyNPC__NullifyNPCPatch))));
+        }
+    }
+
+    public static IEnumerable<CodeInstruction> PolyNPC__NullifyNPCPatch(ILGenerator generator, IEnumerable<CodeInstruction> instructions)
+    {
+        monitor.Log("Gutting PolyamorySweetLove.NPCPatches:NPC_setUpForOutdoorPatioActivity_Prefix");
+        return new CodeInstruction[]
+        {
+            new CodeInstruction(OpCodes.Ldc_I4_1),
+            new CodeInstruction(OpCodes.Ret)
+        };
     }
 
     /// <summary>
