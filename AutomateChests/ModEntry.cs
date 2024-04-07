@@ -59,19 +59,11 @@ namespace AutomateChests
             configMenu.AddParagraph(
                 mod: this.ModManifest,
                 text: () => "The following config is for controlling the item required to enable a chest for automation, and the item you get back when undoing the chest automation. If you change the config while having chests automated, if you remove the item you will get the new configs item instead");
-            // add some config options
-            configMenu.AddBoolOption(
+            configMenu.AddTextOption(
                 mod: this.ModManifest,
-                name: () => "Activation Item is BigCraftable",
-                tooltip: () => "This controls whether to interpret ActivationItemIndex as a BigCraftable or as an Object",
-                getValue: () => this.Config.ActivationItemIsBigCraftable,
-                setValue: value => this.Config.ActivationItemIsBigCraftable = value
-            );
-            configMenu.AddNumberOption(
-                mod: this.ModManifest,
-                name: () => "Activation Item Index",
-                getValue: () => this.Config.ActivationItemIndex,
-                setValue: value => this.Config.ActivationItemIndex = value
+                name: () => "Activation Item ID",
+                getValue: () => this.Config.ActivationItemId,
+                setValue: value => this.Config.ActivationItemId = value
             );
         }
 
@@ -86,11 +78,11 @@ namespace AutomateChests
                 return;
 
             Game1.currentLocation.objects.TryGetValue(e.Cursor.GrabTile, out SObject obj);
-            if (obj != null && obj is Chest { SpecialChestType: Chest.SpecialChestTypes.None} chest)
+            if (obj != null && obj is Chest { SpecialChestType: Chest.SpecialChestTypes.None or Chest.SpecialChestTypes.BigChest } chest)
             {
                 var heldItem = Game1.player.ActiveObject;
                 // if the player is holding a hopper and the chest isn't tagged by us, it should be now
-                if (heldItem != null && heldItem.ParentSheetIndex == Config.ActivationItemIndex && heldItem.bigCraftable.Value == Config.ActivationItemIsBigCraftable && !chest.modData.ContainsKey(this.ModDataFlag))
+                if (heldItem != null && heldItem.QualifiedItemId == Config.ActivationItemId && !chest.modData.ContainsKey(this.ModDataFlag))
                 {
                     chest.Tint = Color.DarkViolet;
                     chest.modData[this.ModDataFlag] = "1";
@@ -110,14 +102,7 @@ namespace AutomateChests
                     chest.heldObject.Value = null;
                     chest.modData.Remove(this.ModDataFlag);
 
-                    Item item;
-                    if (Config.ActivationItemIsBigCraftable)
-                    {
-                        item = new SObject(Vector2.Zero, Config.ActivationItemIndex, false);
-                    } else
-                    {
-                        item = new SObject(Config.ActivationItemIndex, 1, false);
-                    }
+                    Item item = ItemRegistry.Create(Config.ActivationItemId);
                     Game1.player.addItemByMenuIfNecessary(item);
 
                     Game1.playSound("shiny4");
