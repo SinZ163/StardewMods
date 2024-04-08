@@ -29,7 +29,7 @@ namespace AutomateChests
                 {
                     var obj = container.Location.getObjectAtTile(__result.TileArea.X, __result.TileArea.Y);
                     // if it is a normal ordinary chest and isn't flagged by AutomateChests, it is no longer a valid container (but if it is flagged, don't alter it (keeping it automated)
-                    if (obj is Chest { SpecialChestType: Chest.SpecialChestTypes.None } chest && !chest.modData.ContainsKey("SinZ.AutomateChests"))
+                    if (obj is Chest { SpecialChestType: Chest.SpecialChestTypes.None or Chest.SpecialChestTypes.BigChest } chest && !chest.modData.ContainsKey("SinZ.AutomateChests"))
                     {
                         __result = null;
                     }
