@@ -86,8 +86,8 @@ public class ModEntry : Mod
             SpousePatioAllocations[spouse] = patio;
         }
         // Force Farm to be reloaded
-        Monitor.Log("Invalidating Farm: " + Game1.getFarm().Map.assetPath);
-        Helper.GameContent.InvalidateCache(Game1.getFarm().Map.assetPath);
+        Monitor.Log("Invalidating Farm: " + Game1.getFarm().mapPath.Value);
+        Helper.GameContent.InvalidateCache(Game1.getFarm().mapPath.Value);
     }
 
     public void ApplyMapModifications()
