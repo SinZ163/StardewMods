@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <RootNamespace>SinZ.ScrutinizingSpousalSpeech</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <EnableHarmony>true</EnableHarmony>
+  </PropertyGroup>
+  <PropertyGroup>
+    <Name>SinZational Scrutinizing Spousal Speech</Name>
+    <Authors>SinZ</Authors>
+    <Version>0.0.1</Version>
+    <Description>A mod that logs when marriage dialogue fails</Description>
+    <UniqueId>SinZ.ScrutinizingSpousalSpeech</UniqueId>
+    <MinimumApiVersion>4.0</MinimumApiVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.1.1" />
+    <PackageReference Include="Leclair.Stardew.ModManifestBuilder" Version="2.1.0" />
+  </ItemGroup>
+</Project>
