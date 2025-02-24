@@ -146,6 +146,19 @@ namespace Profiler
         public static void StopTimerBigloop(object instance, Stopwatch sw, List<(IModInfo, Stopwatch)> timers)
         {
             sw.Stop();
+            if (!API.EventMetadata.IsEmpty)
+            {
+
+                var eventName = (string)instance.GetType().GetProperty("EventName").GetValue(instance);
+                if (eventName.StartsWith("GameLoop."))
+                {
+                    Monitor.Log("An error occurred during Profiler logging that caused the internal stack to desync. Emptying now.", LogLevel.Error);
+                    while (!API.EventMetadata.IsEmpty)
+                    {
+                        API.Pop();
+                    }
+                }
+            }
 
             if (sw.Elapsed.TotalMilliseconds > Config.BigLoopThreshold)
             {

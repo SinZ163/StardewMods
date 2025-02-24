@@ -23,29 +23,6 @@ namespace AutomateChests
             Monitor = monitor;
         }
 
-        public static IEnumerable<CodeInstruction> Chest__performObjectDropInAction__Transpiler(ILGenerator generator, IEnumerable<CodeInstruction> instructions)
-        {
-            var output = new List<CodeInstruction>();
-            foreach (var instruction in instructions)
-            {
-                output.Add(instruction);
-                if (instruction.opcode == OpCodes.Stloc_1)
-                {
-                    output.Add(new CodeInstruction(OpCodes.Ldarg_0));
-                    output.Add(new CodeInstruction(OpCodes.Ldloc_1));
-                    output.Add(new CodeInstruction(OpCodes.Call, typeof(ObjectPatches).GetMethod(nameof(Chest__performObjectDropInAction__PreserveAutomateModData))));
-                }
-            }
-            return output;
-        }
-        public static void Chest__performObjectDropInAction__PreserveAutomateModData(Chest instance, Chest otherChest)
-        {
-            if (instance.modData.ContainsKey(ModEntry.ModDataExemptFlag))
-                otherChest.modData[ModEntry.ModDataExemptFlag] = instance.modData[ModEntry.ModDataExemptFlag];
-            if (instance.modData.ContainsKey(ModEntry.ModDataFlag))
-                otherChest.modData[ModEntry.ModDataFlag] = instance.modData[ModEntry.ModDataFlag];
-        }
-
         public static void Automate_AutomationFactory_GetFor_SObject__Postfix(ref IAutomatable __result)
         {
             try
@@ -75,7 +52,7 @@ namespace AutomateChests
                 {
                     var message = e.ReadAs<AutomateUpdateChestMessage>();
                     var location = Game1.getLocationFromName(message.LocationName);
-                    var player = Game1.getFarmer(e.FromPlayerID);
+                    var player = Game1.GetPlayer(e.FromPlayerID);
 
                     string label = player != Game1.MasterPlayer
                         ? $"{player.Name}/{e.FromModID}"

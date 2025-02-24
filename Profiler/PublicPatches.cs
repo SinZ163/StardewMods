@@ -53,9 +53,9 @@ namespace Profiler
                     DetailsMap.TryAdd(method, new(detailsType, detailsEntry.Name));
                 }
             }
-            if (detailsEntry.Supress.HasValue)
+            if (detailsEntry.Suppress.HasValue)
             {
-                ExceptionSupressMap.TryAdd(method, detailsEntry.Supress.Value);
+                ExceptionSupressMap.TryAdd(method, detailsEntry.Suppress.Value);
             }
         }
 
@@ -106,12 +106,12 @@ namespace Profiler
         }
         public static void GenericDurationPostfix(Stopwatch __state)
         {
-            __state.Stop();
+            __state?.Stop();
             API.Pop(metadata =>
             {
                 if (metadata is EventDurationMetadata durationMetadata)
                 {
-                    metadata = durationMetadata with { Duration = __state.Elapsed.TotalMilliseconds };
+                    metadata = durationMetadata with { Duration = __state?.Elapsed.TotalMilliseconds ?? -1 };
                 }
                 return metadata;
             });

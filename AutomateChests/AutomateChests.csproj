@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.0.1" />
+    <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.3.1" />
     <Reference Include="Automate">
       <HintPath>$(GamePath)\Mods\Automate\Automate.dll</HintPath>
       <Private>False</Private>

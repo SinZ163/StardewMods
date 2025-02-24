@@ -25,7 +25,7 @@ namespace Profiler
 
         public IDisposable RecordSection(string ModId, string EventType, string Details);
 
-        public MethodBase AddGenericDurationPatch(string type, string method, string detailsType = null);
+        public MethodBase AddGenericDurationPatch(string type, string method, List<string>? genericArgs = null, string detailsType = null);
 
         public HarmonyMethod GenericDurationPrefix { get; }
         public HarmonyMethod GenericDurationPrefixWithArgs { get; }
@@ -145,7 +145,7 @@ namespace Profiler
             return new RecordSectionBlock(this, eventDetails);
         }
 
-        public MethodBase AddGenericDurationPatch(string type, string method, string? detailType = null)
+        public MethodBase AddGenericDurationPatch(string type, string method, List<string>? genericArgs = null, string? detailType = null)
         {
             try
             {
@@ -161,6 +161,21 @@ namespace Profiler
                     Monitor.Log($"Method {method} on type {type} does not exist and therefore can't add duration monitoring.", LogLevel.Error);
                     return null;
                 }
+                if (originalMethod.IsGenericMethod && genericArgs?.Count > 0)
+                {
+                    var genericTypes = new List<Type>(genericArgs.Count);
+                    foreach (var generic in genericArgs)
+                    {
+                        var genericType = Type.GetType(generic);
+                        if (genericType == null)
+                        {
+                            Monitor.Log($"Type {generic} does not exist for a generic argument and therefore can't add duration monitoring.", LogLevel.Error);
+                            return null;
+                        }
+                        genericTypes.Add(genericType);
+                    }
+                    originalMethod = originalMethod.MakeGenericMethod(genericTypes.ToArray());
+                }
                 HarmonyMethod prefix = detailType switch
                 {
                     nameof(DetailsType.Argument) => new HarmonyMethod(typeof(PublicPatches), nameof(PublicPatches.GenericDurationPrefixWithArgs)),
@@ -169,7 +184,7 @@ namespace Profiler
                 Harmony.Patch(
                     original: originalMethod,
                     prefix,
-                    postfix: new HarmonyMethod(typeof(PublicPatches), nameof(PublicPatches.GenericDurationPostfix))
+                    finalizer: new HarmonyMethod(typeof(PublicPatches), nameof(PublicPatches.GenericDurationPostfix))
                 );
                 return originalMethod;
             }

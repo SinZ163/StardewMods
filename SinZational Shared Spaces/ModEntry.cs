@@ -214,26 +214,22 @@ public static class Patches
 
         bool found = false;
 
-        CodeInstruction stloc8 = default;
-
         foreach (var instruction in instructionArray)
         {
-            if (stloc8 == null && instruction.opcode == OpCodes.Stloc_S && (instruction.operand as LocalBuilder).LocalIndex == 8)
-            {
-                stloc8 = instruction;
-            }
             output.Add(instruction);
-            if (!found && instruction.opcode == OpCodes.Ldloc_S && (instruction.operand as LocalBuilder).LocalIndex == 9 && instruction.labels.Count == 2)
+            // if (gameLocation == null)
+            // Game1.log.Warn($"Ignored unknown location ...
+            if (!found && instruction.opcode == OpCodes.Ldloc_S && (instruction.operand as LocalBuilder).LocalIndex == 10 && instruction.labels.Count == 2)
             {
                 found = true;
                 var brTrue = instructionArray[output.Count];
-                var ldLoc8 = instructionArray[output.Count + 3];
-                var stLoc9 = instructionArray[output.Count - 2];
+                var ldLoc9 = instructionArray[output.Count + 3];
+                var stLoc10 = instructionArray[output.Count - 2];
                 output.Add(brTrue);
-                output.Add(ldLoc8);
+                output.Add(ldLoc9);
                 output.Add(new CodeInstruction(OpCodes.Call, typeof(Patches).GetMethod(nameof(SaveGame_loadDataToLocations__FixCabin))));
-                output.Add(stLoc9);
-                output.Add(instruction); //ldLoc9
+                output.Add(stLoc10);
+                output.Add(instruction); //ldLoc10
             }
         }
         return output;

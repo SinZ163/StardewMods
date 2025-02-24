@@ -17,7 +17,7 @@ namespace Profiler
         internal ModConfig Config { get; private set; }
         public Stopwatch timer { get; private set; }
 
-        internal ProfilerAPI ProfilerAPI { get; private set; }
+        public ProfilerAPI ProfilerAPI { get; private set; }
 
         public override void Entry(IModHelper helper)
         {
@@ -40,6 +40,7 @@ namespace Profiler
             ProfilerAPI = new ProfilerAPI(Config, harmony, timer, Monitor);
             PublicPatches.Initialize(ProfilerAPI, harmony, Monitor);
             ManagedEventPatches.Initialize(Monitor, this.Config, ProfilerAPI, harmony);
+
             this.timer.Restart();
             ProfilerAPI.Write(new EventMetadata(this.ModManifest.UniqueID, String.Join(separator: '/', this.ModManifest.UniqueID, "Init"), DateTimeOffset.Now.ToString("o", System.Globalization.CultureInfo.InvariantCulture), new()));
         }
@@ -81,7 +82,7 @@ namespace Profiler
                     {
                         case "Duration":
                             {
-                                var methodBase = ProfilerAPI.AddGenericDurationPatch(entry.TargetType, entry.TargetMethod, entry.Details?.Type);
+                                var methodBase = ProfilerAPI.AddGenericDurationPatch(entry.TargetType, entry.TargetMethod, entry.TargetMethodGenericArguments, entry.Details?.Type);
                                 if (entry.Details != null && methodBase != null)
                                 {
                                     PublicPatches.AddDetailsEntry(methodBase, entry.Details);

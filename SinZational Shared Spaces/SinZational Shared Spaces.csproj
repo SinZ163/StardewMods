@@ -9,14 +9,14 @@
   <PropertyGroup>
     <Name>SinZational Shared Spaces</Name>
     <Authors>SinZ</Authors>
-    <Version>1.0.3</Version>
+    <Version>1.0.4</Version>
     <Description>A mod that implements multiplayer stacked cabins</Description>
     <UniqueId>SinZ.SharedSpaces</UniqueId>
-    <MinimumApiVersion>4.0</MinimumApiVersion>
+    <MinimumApiVersion>4.1.3</MinimumApiVersion>
     <UpdateKeys>Nexus:20654</UpdateKeys>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.1.1" />
+    <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.3.1" />
     <PackageReference Include="Leclair.Stardew.ModManifestBuilder" Version="2.1.0" />
   </ItemGroup>
 </Project>

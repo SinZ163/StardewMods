@@ -41,10 +41,6 @@ namespace AutomateChests
                 original: AccessTools.Method(Type.GetType("Pathoschild.Stardew.Automate.ModEntry,Automate"), "OnModMessageReceived", parameters: new Type[] { typeof(object), typeof(ModMessageReceivedEventArgs)}),
                 postfix: new HarmonyMethod(typeof(ObjectPatches), nameof(ObjectPatches.Automate_ModEntry_OnModMessageReceived__Postfix))
              );
-            harmony.Patch(
-                original: AccessTools.Method(typeof(Chest), nameof(Chest.performObjectDropInAction)),
-                transpiler: new HarmonyMethod(typeof(ObjectPatches), nameof(ObjectPatches.Chest__performObjectDropInAction__Transpiler))
-            );
             this.Monitor.Log("This mod patches Automate. If you notice issues with Automate, make sure it happens without this mod before reporting it to the Automate page.", LogLevel.Trace);
         }
 

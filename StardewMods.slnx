@@ -1,0 +1,20 @@
+<Solution>
+  <Project Path="AutomateChests/AutomateChests.csproj" />
+  <Project Path="LookupAnything_FTMIntegration/LookupAnything_FTMIntegration.csproj" />
+  <Project Path="MoonMisadventures_BiggerBackpackPatch/MoonMisadventures_BiggerBackpackPatch.csproj" />
+  <Project Path="Profiler-ContentPatcher/Profiler.ContentPatcher.csproj" />
+  <Project Path="Profiler/Profiler.csproj" />
+  <Project Path="ScheduleDebugger/ScheduleDebugger.csproj" />
+  <Project Path="SinZational Scene Setup/SinZational Scene Setup.csproj" />
+  <Project Path="SinZational Science Showcase/SinZational Science Showcase.csproj" />
+  <Project Path="SinZational Scrutinizing Spousal Speech/SinZational Scrutinizing Spousal Speech.csproj" />
+  <Project Path="SinZational Several Spouse Spots/SinZational Several Spouse Spots.csproj" />
+  <Project Path="SinZational Shared Spaces/SinZational Shared Spaces.csproj" />
+  <Project Path="SinZational Speedy Solutions/SinZational Speedy Solutions.csproj" />
+  <Project Path="SinZational Spending Services/SinZational Spending Services.csproj" />
+  <Project Path="SinZational Sporadic Shifts/SinZational Sporadic Shifts.csproj" />
+  <Project Path="SinZationalSeleneSupport.Support/SinZationalSeleneSupport.Support.csproj" />
+  <Project Path="SinZationalSeleneSupport/SinZationalSeleneSupport.csproj" />
+  <Project Path="SinZationalSixSupport/SinZationalSixSupport.csproj" />
+  <Project Path="SinZationalSnakeSupport/SinZationalSnakeSupport.csproj" />
+</Solution>

@@ -20,7 +20,7 @@
   <ItemGroup>
     <PackageReference Include="IgnoresAccessChecksToGenerator" Version="0.6.0" />
     <PackageReference Include="IronPython" Version="3.4.1" />
-    <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.1.1" />
+    <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.3.1" />
     <Reference Include="SMAPI.Toolkit" HintPath="$(GamePath)\smapi-internal\SMAPI.Toolkit.dll" />
   </ItemGroup>
 
