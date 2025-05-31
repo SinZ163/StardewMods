@@ -20,7 +20,7 @@
 
   <ItemGroup>
     <InternalsAssemblyName Include="ContentPatcher" />
-    <SMAPIDependency Include="Pathoschild.ContentPatcher" Version="2.6.0" Reference="true"/>
+    <SMAPIDependency Include="Pathoschild.ContentPatcher" Version="2.6.0" Reference="true" />
     <InternalsAssemblyName Include="StardewModdingAPI" />
   </ItemGroup>
   

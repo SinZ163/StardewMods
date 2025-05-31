@@ -5,7 +5,6 @@
   <Project Path="MoonMisadventures_BiggerBackpackPatch/MoonMisadventures_BiggerBackpackPatch.csproj" />
   <Project Path="Profiler-ContentPatcher/Profiler.ContentPatcher.csproj" />
   <Project Path="Profiler/Profiler.csproj" />
-  <Project Path="ScheduleDebugger/ScheduleDebugger.csproj" />
   <Project Path="SinZational Scene Setup/SinZational Scene Setup.csproj" />
   <Project Path="SinZational Science Showcase/SinZational Science Showcase.csproj" />
   <Project Path="SinZational Scrutinizing Spousal Speech/SinZational Scrutinizing Spousal Speech.csproj" />
