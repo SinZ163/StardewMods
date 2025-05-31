@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="AutomateChests/AutomateChests.csproj" />
+  <Project Path="Debugger/Debugger.csproj" />
   <Project Path="LookupAnything_FTMIntegration/LookupAnything_FTMIntegration.csproj" />
   <Project Path="MoonMisadventures_BiggerBackpackPatch/MoonMisadventures_BiggerBackpackPatch.csproj" />
   <Project Path="Profiler-ContentPatcher/Profiler.ContentPatcher.csproj" />

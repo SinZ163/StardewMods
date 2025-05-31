@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <RootNamespace>SinZ.Debugger</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <EnableHarmony>true</EnableHarmony>
+    <InternalsAssemblyUseEmptyMethodBodies>false</InternalsAssemblyUseEmptyMethodBodies>
+    <BundleExtraAssemblies>ThirdParty, System</BundleExtraAssemblies>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <Name>Debugger</Name>
+    <Authors>SinZ</Authors>
+    <Version>0.0.1</Version>
+    <Description>A mod that enables mod author facing features</Description>
+    <UniqueId>SinZ.Debugger</UniqueId>
+    <MinimumApiVersion>4.0</MinimumApiVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsAssemblyName Include="ContentPatcher" />
+    <SMAPIDependency Include="Pathoschild.ContentPatcher" Version="2.6.0" Reference="true"/>
+    <InternalsAssemblyName Include="StardewModdingAPI" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="IgnoresAccessChecksToGenerator" Version="0.8.0" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.VisualStudio.Shared.VSCodeDebugProtocol" Version="17.2.60629.1" />
+    <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.3.1" />
+    <PackageReference Include="Leclair.Stardew.ModManifestBuilder" Version="2.1.0" />
+  </ItemGroup>
+</Project>
