@@ -4,14 +4,12 @@ using ContentPatcher.Framework.Tokens;
 using Microsoft.VisualStudio.Shared.VSCodeDebugProtocol;
 using Microsoft.VisualStudio.Shared.VSCodeDebugProtocol.Messages;
 using StardewModdingAPI.Utilities;
-using StardewValley;
-using StardewValley.GameData.Buildings;
 using System.Collections;
 using System.Reflection;
 using StackFrame = Microsoft.VisualStudio.Shared.VSCodeDebugProtocol.Messages.StackFrame;
 using Thread = Microsoft.VisualStudio.Shared.VSCodeDebugProtocol.Messages.Thread;
 
-namespace SinZ.Debugger;
+namespace SinZ.Debugger.DAP;
 
 public class DebugAdapter : DebugAdapterBase
 {
@@ -143,14 +141,15 @@ public class DebugAdapter : DebugAdapterBase
                             Column = patchEntry.Debugger_LineNumberRange.EndLineNumber,
                             EndColumn = patchEntry.Debugger_LineNumberRange.EndLineColumn,
                             PresentationHint = StackFrame.PresentationHintValue.Normal
-                            });
+                        });
                         var usedTokens = new Scope()
                         {
                             Name = "Consumed Tokens",
                             VariablesReference = ++VariableReference,
                         };
                         Variables[usedTokens.VariablesReference] = new();
-                        var patchFieldTokens = new Scope() {
+                        var patchFieldTokens = new Scope()
+                        {
                             Name = "Patch Field Tokens",
                             VariablesReference = ++VariableReference,
                         };
@@ -200,7 +199,8 @@ public class DebugAdapter : DebugAdapterBase
                             if (token != null)
                             {
                                 PopulateToken(token, usedTokens.VariablesReference);
-                            } else
+                            }
+                            else
                             {
                                 Variables[usedTokens.VariablesReference].Add(new Variable(tokenName, "<not loaded>", 0));
                             }
@@ -214,7 +214,7 @@ public class DebugAdapter : DebugAdapterBase
     }
     public void PopulateVariables()
     {
-        var screenManagerWrapper = typeof(ContentPatcher.ModEntry).GetField("ScreenManager", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this.cpMod) as PerScreen<ScreenManager>;
+        var screenManagerWrapper = typeof(ContentPatcher.ModEntry).GetField("ScreenManager", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(cpMod) as PerScreen<ScreenManager>;
         var globalContext = typeof(TokenManager).GetField("GlobalContext", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(screenManagerWrapper.Value.TokenManager) as GenericTokenContext;
         var localTokens = typeof(TokenManager).GetField("LocalTokens", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(screenManagerWrapper.Value.TokenManager) as IDictionary;
 
@@ -271,8 +271,9 @@ public class DebugAdapter : DebugAdapterBase
 
     protected override InitializeResponse HandleInitializeRequest(InitializeArguments args)
     {
-        this.Protocol.SendEvent(new InitializedEvent());
-        return new InitializeResponse() {
+        Protocol.SendEvent(new InitializedEvent());
+        return new InitializeResponse()
+        {
             //SupportsEvaluateForHovers = true,
             SupportsCompletionsRequest = true,
             SupportsConfigurationDoneRequest = true,
@@ -290,7 +291,7 @@ public class DebugAdapter : DebugAdapterBase
         Breakpoints.Remove(arguments.Source.Path);
         // TODO: Handle loading/pending states
         // TODO: Handle breakpoints changing and needing to repopulate threads
-        if (!ModEntry.SourceMap.TryGetValue(arguments.Source.Path, out var map))
+        if (!DebugAdapterManager.SourceMap.TryGetValue(arguments.Source.Path, out var map))
         {
             FailureReason = "Untracked file";
         }
@@ -353,7 +354,7 @@ public class DebugAdapter : DebugAdapterBase
         if (!isStopped)
         {
             PopulateInitialState();
-            this.Protocol.SendEvent(new StoppedEvent(StoppedEvent.ReasonValue.Entry) { Description = "Debug View", AllThreadsStopped = true, PreserveFocusHint = true });
+            Protocol.SendEvent(new StoppedEvent(StoppedEvent.ReasonValue.Entry) { Description = "Debug View", AllThreadsStopped = true, PreserveFocusHint = true });
             isStopped = true;
         }
         return new ThreadsResponse(Threads);
@@ -392,12 +393,12 @@ public class DebugAdapter : DebugAdapterBase
 
     public void Run()
     {
-        this.Protocol.Run();
+        Protocol.Run();
     }
 
     internal void UpdateContext()
     {
         //PopulateVariables();
-        this.Protocol.SendEvent(new InvalidatedEvent() { Areas = new() { InvalidatedAreas.Variables } });
+        Protocol.SendEvent(new InvalidatedEvent() { Areas = new() { InvalidatedAreas.Variables } });
     }
 }

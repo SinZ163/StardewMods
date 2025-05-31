@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 
-namespace SinZ.Debugger;
+namespace SinZ.Debugger.DAP;
 
 public class LineNumberRange
 {
@@ -41,7 +41,7 @@ class LineNumberConverter : JsonConverter
 
             var rawJObject = JObject.Load(reader);
             var lineInfoObject = Activator.CreateInstance(objectType) as IHasLineNumberRange;
-            serializer.Populate(this.CloneReader(reader, rawJObject), lineInfoObject);
+            serializer.Populate(CloneReader(reader, rawJObject), lineInfoObject);
 
             lineInfoObject.Debugger_LineNumberRange = new()
             {

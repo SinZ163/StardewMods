@@ -2,14 +2,8 @@
 using Newtonsoft.Json;
 using Pathoschild.Stardew.Common.Utilities;
 using StardewModdingAPI;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.Serialization;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace SinZ.Debugger;
+namespace SinZ.Debugger.DAP;
 
 public class ContentConfigExtended : ContentConfig
 {
@@ -23,7 +17,7 @@ public class ContentConfigExtended : ContentConfig
 public class PatchConfigExtended : PatchConfig, IHasLineNumberRange
 {
     [JsonIgnore]
-    
+
     public LineNumberRange Debugger_LineNumberRange { get; set; }
 
 }

@@ -12,7 +12,7 @@
   <PropertyGroup>
     <Name>Debugger</Name>
     <Authors>SinZ</Authors>
-    <Version>0.0.1</Version>
+    <Version>0.0.1-alpha1</Version>
     <Description>A mod that enables mod author facing features</Description>
     <UniqueId>SinZ.Debugger</UniqueId>
     <MinimumApiVersion>4.0</MinimumApiVersion>
