@@ -53,7 +53,7 @@ namespace ScheduleDebugger
             foreach (var doorPoint in gameLocation.doors.Keys)
             {
                 var doorWarp = gameLocation.getWarpFromDoor(doorPoint, npc);
-                warps.Add((gameLocation.NameOrUniqueName, doorPoint.X, doorPoint.Y), (doorWarp.TargetName, doorWarp.TargetX, doorWarp.TargetY));
+                warps.TryAdd((gameLocation.NameOrUniqueName, doorPoint.X, doorPoint.Y), (doorWarp.TargetName, doorWarp.TargetX, doorWarp.TargetY));
                 //Monitor.Log($"Location {gameLocation.NameOrUniqueName} has door ({doorWarp.X},{doorWarp.Y}) -> ({doorWarp.TargetName},{doorWarp.TargetX},{doorWarp.TargetY})", LogLevel.Debug);
             }
             Schedules[gameLocation] = new();
@@ -121,9 +121,9 @@ namespace ScheduleDebugger
                         // Create a Schedules datastructure grouped by location
                         foreach (var location in Game1.locations)
                         {
-                            foreach (var npc in location.getCharacters())
+                            foreach (var npc in location.characters)
                             {
-                                if (!npc.isVillager())
+                                if (!npc.IsVillager)
                                 {
                                     continue;
                                 }
