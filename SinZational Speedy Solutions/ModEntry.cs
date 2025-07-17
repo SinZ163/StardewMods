@@ -1,10 +1,7 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
-using StardewValley.GameData;
-using xTile;
-using xTile.Format;
 
 namespace SinZ.SpeedySolutions;
 
@@ -19,6 +16,7 @@ public class ModEntry : Mod
         GenericPatches.Init(harmony, helper, Monitor);
         AudioCueModifications.Init(harmony, helper, Monitor);
         TBinMapper.Init(harmony, helper, Monitor);
+        ModImageCache.Init(harmony, helper, Monitor);
 
         helper.Events.GameLoop.GameLaunched += OnGameLaunched;
     }
@@ -79,6 +77,23 @@ public class ModEntry : Mod
             getValue: () => ModEntry.Config.EnableTBinLoad,
             setValue: value => ModEntry.Config.EnableTBinLoad = value,
             tooltip: () => "This enables the functionality of loading cached tbins in place of a given tmx file"
+        );
+        configMenu.AddNumberOption(
+            mod: this.ModManifest,
+            name: () => "In Memory Threshold",
+            getValue: () => ModEntry.Config.MapInMemoryThreshold,
+            setValue: value => ModEntry.Config.MapInMemoryThreshold = value,
+            tooltip: () => "This sets a threshold in bytes where maps below this size will be stored in-memory for faster loading"
+        );
+
+        configMenu.AddSectionTitle(mod: this.ModManifest, text: () => "Modded Image Cache", tooltip: () => "This is for optimising image loads by keeping them in-memory to reduce file io costs");
+
+        configMenu.AddBoolOption(
+            mod: this.ModManifest,
+            name: () => "Enable In-memory image cache",
+            getValue: () => ModEntry.Config.EnableImageCache,
+            setValue: value => ModEntry.Config.EnableImageCache = value,
+            tooltip: () => "This enables the functionality of having mod images cached so that they don't read from filesystem multiple times"
         );
 
         configMenu.AddSectionTitle(mod: this.ModManifest, text: () => "Other", tooltip: () => "This is for misc changes that aren't large enough for a standalone section");

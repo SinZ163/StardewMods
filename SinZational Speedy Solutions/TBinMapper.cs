@@ -13,7 +13,8 @@ namespace SinZ.SpeedySolutions;
 public static class TBinMapper
 {
     public record TBinEntry(long Length, long WriteTime, string CacheName);
-    public static ConcurrentDictionary<string, TBinEntry> Cache = new();
+    public static ConcurrentDictionary<string, TBinEntry> Database = new();
+    public static ConcurrentDictionary<string, MemoryStream> InMemoryCache = new();
 
     private static IModHelper helper;
     private static IMonitor monitor;
@@ -29,7 +30,7 @@ public static class TBinMapper
         helper.Events.GameLoop.Saving += GameLoop_Saving;
         TBinMapper.monitor = monitor;
         Directory.CreateDirectory(Path.Combine(helper.DirectoryPath, "cache"));
-        Cache = new ConcurrentDictionary<string, TBinEntry>(helper.Data.ReadJsonFile<Dictionary<string, TBinEntry>>("cache/cache.json") ?? []);
+        Database = new ConcurrentDictionary<string, TBinEntry>(helper.Data.ReadJsonFile<Dictionary<string, TBinEntry>>("cache/cache.json") ?? []);
 
         harmony.Patch(
             AccessTools.Method(typeof(TMXFormat), nameof(TMXFormat.Load), [typeof(Stream)]),
@@ -40,12 +41,12 @@ public static class TBinMapper
 
     private static void GameLoop_Saving(object? sender, StardewModdingAPI.Events.SavingEventArgs e)
     {
-        helper.Data.WriteJsonFile("cache/cache.json", new Dictionary<string, TBinEntry>(Cache));
+        helper.Data.WriteJsonFile("cache/cache.json", new Dictionary<string, TBinEntry>(Database));
     }
 
     internal static void RemoveEntry(string fullName, FileInfo fileRef)
     {
-        Cache.Remove(fullName, out _);
+        Database.Remove(fullName, out _);
         if (fileRef.Exists)
         {
             fileRef.Delete();
@@ -61,7 +62,7 @@ public static class TBinMapper
             return true;
         }
         monitor.Log("Checking if asset is in the TBin cache");
-        if (!Cache.TryGetValue(fsStream.Name, out var cacheEntry))
+        if (!Database.TryGetValue(fsStream.Name, out var cacheEntry))
         {
             if (!ModEntry.Config.EnableTBinSave) return true;
             __state = true;
@@ -76,6 +77,21 @@ public static class TBinMapper
             monitor.Log("Cache entry is invalid, clearing");
             RemoveEntry(file.FullName, replacementFile);
             return true;
+        }
+        if (InMemoryCache.TryGetValue(replacementFile.FullName, out var memStream))
+        {
+            monitor.Log("In Memory cache has an entry, using in memory cache and skipping fs entirely");
+            memStream.Position = 0;
+            __result = FormatManager.Instance.BinaryFormat.Load(memStream);
+            return false;
+        }
+        if (cacheEntry.Length < ModEntry.Config.MapInMemoryThreshold)
+        {
+            monitor.Log("Map is eligible for in memory cache, writing to in-memory cache");
+            var ms = new MemoryStream();
+            using var fs = replacementFile.OpenRead();
+            fs.CopyTo(ms);
+            InMemoryCache.TryAdd(replacementFile.FullName, ms);
         }
         __result = FormatManager.Instance.LoadMap(replacementFile.FullName);
         return false;
@@ -95,7 +111,7 @@ public static class TBinMapper
                 Layer.m_tileSize = FakeSize;
                 FormatManager.Instance.BinaryFormat.Store(__result, fs);
             }
-            Cache[fileName] = new(file.Length, file.LastWriteTimeUtc.ToFileTimeUtc(), cacheName);
+            Database[fileName] = new(file.Length, file.LastWriteTimeUtc.ToFileTimeUtc(), cacheName);
         } catch (Exception e)
         {
             monitor.Log("Failed to store cache entry for " + fileName, LogLevel.Error);
