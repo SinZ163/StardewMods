@@ -10,7 +10,7 @@
   <PropertyGroup>
     <Name>SinZational Speedy Solutions</Name>
     <Authors>SinZ</Authors>
-    <Version>1.0.0-alpha-6</Version>
+    <Version>1.0.0-alpha-7</Version>
     <Description>A mod that implements performance optimizations</Description>
     <UniqueId>SinZ.SpeedySolutions</UniqueId>
     <MinimumApiVersion>4.1.3</MinimumApiVersion>

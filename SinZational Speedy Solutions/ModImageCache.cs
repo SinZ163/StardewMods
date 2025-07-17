@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 using StardewModdingAPI.Framework.Content;
+using StardewModdingAPI.Framework.ContentManagers;
 
 namespace SinZ.SpeedySolutions;
 
@@ -18,15 +19,16 @@ internal static class ModImageCache
         ModImageCache.monitor = monitor;
 
         harmony.Patch(
-            AccessTools.Method("StardewModdingAPI.Framework.ContentManagers.ModContentManager:LoadRawImageData"),
-            prefix: new HarmonyMethod(typeof(GenericPatches).GetMethod(nameof(ModContentManager__LoadRawImageData__Prefix))),
-            postfix: new HarmonyMethod(typeof(GenericPatches).GetMethod(nameof(ModContentManager__LoadRawImageData__Postfix)))
+            AccessTools.Method(typeof(ModContentManager), "LoadRawImageData"),
+            prefix: new HarmonyMethod(AccessTools.Method(typeof(ModImageCache), nameof(ModContentManager__LoadRawImageData__Prefix))),
+            postfix: new HarmonyMethod(AccessTools.Method(typeof(ModImageCache), nameof(ModContentManager__LoadRawImageData__Postfix)))
         );
     }
 
     private static void ModContentManager__LoadRawImageData__Postfix(FileInfo file, bool forRawData, ref IRawTextureData __result)
     {
         if (!ModEntry.Config.EnableImageCache) return;
+        if (ModImageCache.TextureCache.ContainsKey(file.FullName)) return;
         if (!forRawData)
         {
             ModImageCache.TextureCache.Add(file.FullName, (RawTextureData)__result);
