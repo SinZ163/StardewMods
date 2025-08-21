@@ -8,11 +8,18 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace Profiler
 {
-    public record EventMetadata(string ModId, string EventType, string Details, List<object> InnerDetails, string Type = "Base");
+    public record EventMetadata(string ModId, string EventType, string Details, List<object> InnerDetails, string Type = "Base")
+    {
+#if DEBUG
+        [JsonIgnore]
+        public Guid InstanceId { get; init; } = Guid.NewGuid();
+#endif
+    }
     internal record EventEntry(double At, EventMetadata Entry);
     public record EventDurationMetadata(string ModId, string EventType, string Details, double Duration, List<object> InnerDetails) : EventMetadata(ModId, EventType, Details, InnerDetails, "Duration");
     public record EventTraceMetadata(string ModId, string EventType, string Details, string ExceptionType, string ExceptionMessage, List<object> InnerDetails) : EventMetadata(ModId, EventType, Details, InnerDetails, "Trace");
@@ -116,6 +123,9 @@ namespace Profiler
 
         public void Push(EventMetadata eventDetails, bool important = false)
         {
+#if DEBUG
+            Monitor.Log($"${eventDetails} push");
+#endif
             EventMetadata.Push(new(Timer.Elapsed.TotalMilliseconds, eventDetails));
             if (important)
             {
@@ -128,6 +138,9 @@ namespace Profiler
             if (EventMetadata.TryPop(out var metadataPair))
             {
                 var metadata = modifier(metadataPair.Entry);
+#if DEBUG
+                Monitor.Log($"${metadata} pop (modifier)");
+#endif
                 Write(metadataPair.At, metadata);
             }
         }
@@ -135,6 +148,9 @@ namespace Profiler
         {
             if (EventMetadata.TryPop(out var metadataPair))
             {
+#if DEBUG
+                Monitor.Log($"${metadataPair.Entry} pop");
+#endif
                 Write(metadataPair.At, metadataPair.Entry);
             }
         }
@@ -179,7 +195,7 @@ namespace Profiler
                 HarmonyMethod prefix = detailType switch
                 {
                     nameof(DetailsType.Argument) => new HarmonyMethod(typeof(PublicPatches), nameof(PublicPatches.GenericDurationPrefixWithArgs)),
-                    _ => new HarmonyMethod(typeof(PublicPatches), nameof(PublicPatches.GenericDurationPrefix)),
+                    _ => new HarmonyMethod(typeof(PublicPatches).GetMethod(nameof(PublicPatches.GenericDurationPrefix)), priority: Priority.First),
                 };
                 Harmony.Patch(
                     original: originalMethod,

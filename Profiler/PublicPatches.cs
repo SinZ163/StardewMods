@@ -106,12 +106,13 @@ namespace Profiler
         }
         public static void GenericDurationPostfix(Stopwatch __state)
         {
-            __state?.Stop();
+            if (__state == null) return;
+            __state.Stop();
             API.Pop(metadata =>
             {
                 if (metadata is EventDurationMetadata durationMetadata)
                 {
-                    metadata = durationMetadata with { Duration = __state?.Elapsed.TotalMilliseconds ?? -1 };
+                    metadata = durationMetadata with { Duration = __state.Elapsed.TotalMilliseconds };
                 }
                 return metadata;
             });
