@@ -39,37 +39,52 @@ internal class DebugAdapterManager
     {
         Thread listenThread = new Thread(() =>
         {
-            TcpListener listener = new TcpListener(IPAddress.Parse("0.0.0.0"), ModEntry.Config.Port);
-            listener.Start();
-
-            while (true)
+            try
             {
-                Socket clientSocket = listener.AcceptSocket();
-                Thread clientThread = new Thread(() =>
+                TcpListener listener = new TcpListener(IPAddress.Parse("0.0.0.0"), ModEntry.Config.Port);
+                listener.Start();
+
+                while (true)
                 {
-                    ModEntry.Log("Accepted connection");
-
-                    using (Stream stream = new NetworkStream(clientSocket))
+                    Socket clientSocket = listener.AcceptSocket();
+                    Thread clientThread = new Thread(() =>
                     {
-                        var adapter = new DebugAdapter(stream, stream, cpMod);
-                        adapter.Protocol.LogMessage += (sender, e) => ModEntry.Log(e.Message);
-                        adapter.Protocol.DispatcherError += (sender, e) =>
+                        try
                         {
-                            ModEntry.Log(e.Exception.Message, LogLevel.Error);
-                        };
-                        DebugAdapterManager.Adapters.TryAdd(Thread.CurrentThread.ManagedThreadId, adapter);
-                        adapter.Run();
-                        adapter.Protocol.WaitForReader();
+                            ModEntry.Log("Accepted connection");
 
-                        DebugAdapterManager.Adapters.TryRemove(new(Thread.CurrentThread.ManagedThreadId, adapter));
-                        adapter = null;
-                    }
+                            using (Stream stream = new NetworkStream(clientSocket))
+                            {
+                                var adapter = new DebugAdapter(stream, stream, cpMod);
+                                adapter.Protocol.LogMessage += (sender, e) => ModEntry.Log(e.Message);
+                                adapter.Protocol.DispatcherError += (sender, e) =>
+                                {
+                                    ModEntry.Log(e.Exception.Message, LogLevel.Error);
+                                };
+                                DebugAdapterManager.Adapters.TryAdd(Thread.CurrentThread.ManagedThreadId, adapter);
+                                adapter.Run();
+                                adapter.Protocol.WaitForReader();
 
-                    ModEntry.Log("Connection closed");
-                });
+                                DebugAdapterManager.Adapters.TryRemove(new(Thread.CurrentThread.ManagedThreadId, adapter));
+                                adapter = null;
+                            }
 
-                clientThread.Name = "DebugServer connection thread";
-                clientThread.Start();
+                            ModEntry.Log("Connection closed");
+                        } catch (Exception e)
+                        {
+
+                            Monitor.Log("An error occurred on socket thread: " + e.Message, LogLevel.Error);
+                            Monitor.Log(e.StackTrace ?? "Unknown stack trace");
+                        }
+                    });
+
+                    clientThread.Name = "DebugServer connection thread";
+                    clientThread.Start();
+                }
+            } catch (Exception e)
+            {
+                Monitor.Log("An error occurred on listener thread: " + e.Message, LogLevel.Error);
+                Monitor.Log(e.StackTrace ?? "Unknown stack trace");
             }
         });
         listenThread.Name = "DebugServer listener thread";

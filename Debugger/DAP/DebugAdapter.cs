@@ -1,11 +1,18 @@
 ﻿using ContentPatcher.Framework;
+using ContentPatcher.Framework.Conditions;
+using ContentPatcher.Framework.Lexing;
+using ContentPatcher.Framework.Lexing.LexTokens;
 using ContentPatcher.Framework.Patches;
 using ContentPatcher.Framework.Tokens;
 using Microsoft.VisualStudio.Shared.VSCodeDebugProtocol;
 using Microsoft.VisualStudio.Shared.VSCodeDebugProtocol.Messages;
+using StardewModdingAPI;
 using StardewModdingAPI.Utilities;
 using System.Collections;
+using System.Diagnostics;
 using System.Reflection;
+using System.Reflection.Metadata;
+using System.Threading;
 using StackFrame = Microsoft.VisualStudio.Shared.VSCodeDebugProtocol.Messages.StackFrame;
 using Thread = Microsoft.VisualStudio.Shared.VSCodeDebugProtocol.Messages.Thread;
 
@@ -23,6 +30,7 @@ public class DebugAdapter : DebugAdapterBase
     private Dictionary<int, List<StackFrame>> StackFrames;
     private Dictionary<int, List<Variable>> Variables;
     private Dictionary<string, int> ContentPackToStackFrame;
+    private Dictionary<IPatch, int> PatchToStackFrame;
 
     private Dictionary<string, Dictionary<IPatch, PatchConfigExtended>> Breakpoints = new();
 
@@ -94,7 +102,8 @@ public class DebugAdapter : DebugAdapterBase
         var threadId = 0;
         var stackFrameId = 0;
 
-        ContentPackToStackFrame = new Dictionary<string, int>();
+        ContentPackToStackFrame = new();
+        PatchToStackFrame = new();
 
         var tokenStateThread = new Thread()
         {
@@ -102,11 +111,11 @@ public class DebugAdapter : DebugAdapterBase
             Name = "Token State",
         };
         Threads.Add(tokenStateThread);
+        StackFrames.Add(tokenStateThread.Id, new());
         foreach (var pack in packs)
         {
             ContentPackToStackFrame.Add(pack.Manifest.UniqueID, ++stackFrameId);
-            StackFrames.Add(tokenStateThread.Id, new()
-            {
+            StackFrames[tokenStateThread.Id].Add(
                 new(stackFrameId, pack.Manifest.Name + " Token State", 0, 0)
                 {
                     Source = new()
@@ -120,7 +129,7 @@ public class DebugAdapter : DebugAdapterBase
                     EndColumn = 100,
                     PresentationHint = StackFrame.PresentationHintValue.Subtle
                 }
-            });
+            );
             Thread? packThread = null;
             foreach (var filename in Breakpoints.Keys)
             {
@@ -128,7 +137,13 @@ public class DebugAdapter : DebugAdapterBase
                 {
                     foreach ((var patch, var patchEntry) in Breakpoints[filename])
                     {
-                        packThread ??= new Thread(++threadId, pack.Manifest.Name);
+                        if (patch.ContentPack.Manifest.UniqueID != pack.Manifest.UniqueID) continue;
+                        if (packThread == null)
+                        {
+                            packThread = new Thread(++threadId, pack.Manifest.Name);
+                            Threads.Add(packThread);
+                            StackFrames[packThread.Id] = new();
+                        }
                         StackFrames[packThread.Id].Add(new(++stackFrameId, patch.Path.ToString(), 0, 0)
                         {
                             Source = new()
@@ -142,70 +157,7 @@ public class DebugAdapter : DebugAdapterBase
                             EndColumn = patchEntry.Debugger_LineNumberRange.EndLineColumn,
                             PresentationHint = StackFrame.PresentationHintValue.Normal
                         });
-                        var usedTokens = new Scope()
-                        {
-                            Name = "Consumed Tokens",
-                            VariablesReference = ++VariableReference,
-                        };
-                        Variables[usedTokens.VariablesReference] = new();
-                        var patchFieldTokens = new Scope()
-                        {
-                            Name = "Patch Field Tokens",
-                            VariablesReference = ++VariableReference,
-                        };
-                        Variables[patchFieldTokens.VariablesReference] = new();
-                        var customLocalTokens = new Scope()
-                        {
-                            Name = "Local Tokens",
-                            VariablesReference = ++VariableReference,
-                        };
-                        Variables[customLocalTokens.VariablesReference] = new();
-                        var inheritedLocalTokens = new Scope()
-                        {
-                            Name = "Inherited Local Tokens",
-                            VariablesReference = ++VariableReference,
-                        };
-                        Variables[inheritedLocalTokens.VariablesReference] = new();
-                        LocalScopes[stackFrameId] = new() { usedTokens, patchFieldTokens };
-
-                        var patchFieldTokensContext = typeof(Patch).GetField("PatchFieldTokensContext", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(patch) as LocalContext;
-                        foreach (var token in patchFieldTokensContext.GetTokens(false))
-                        {
-                            PopulateToken(token, patchFieldTokens.VariablesReference);
-                        }
-                        var customLocalFieldTokensContext = typeof(Patch).GetField("CustomLocalTokensContext", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(patch) as LocalContext;
-                        if (customLocalFieldTokensContext != null)
-                        {
-                            foreach (var token in patchFieldTokensContext.GetTokens(false))
-                            {
-                                PopulateToken(token, customLocalTokens.VariablesReference);
-                            }
-                            LocalScopes[stackFrameId].Add(customLocalTokens);
-                        }
-                        var inheritedLocalTokensContext = typeof(Patch).GetField("InheritedLocalTokensContext", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(patch) as LocalContext;
-                        if (inheritedLocalTokensContext != null)
-                        {
-                            foreach (var token in inheritedLocalTokensContext.GetTokens(false))
-                            {
-                                PopulateToken(token, inheritedLocalTokens.VariablesReference);
-                            }
-                            LocalScopes[stackFrameId].Add(inheritedLocalTokens);
-                        }
-
-                        var useContext = customLocalFieldTokensContext ?? patchFieldTokensContext;
-                        foreach (var tokenName in patch.GetTokensUsed())
-                        {
-                            var token = useContext.GetToken(tokenName, false);
-                            if (token != null)
-                            {
-                                PopulateToken(token, usedTokens.VariablesReference);
-                            }
-                            else
-                            {
-                                Variables[usedTokens.VariablesReference].Add(new Variable(tokenName, "<not loaded>", 0));
-                            }
-                        }
-
+                        PatchToStackFrame.Add(patch, stackFrameId);
                     }
                 }
             }
@@ -217,6 +169,10 @@ public class DebugAdapter : DebugAdapterBase
         var screenManagerWrapper = typeof(ContentPatcher.ModEntry).GetField("ScreenManager", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(cpMod) as PerScreen<ScreenManager>;
         var globalContext = typeof(TokenManager).GetField("GlobalContext", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(screenManagerWrapper.Value.TokenManager) as GenericTokenContext;
         var localTokens = typeof(TokenManager).GetField("LocalTokens", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(screenManagerWrapper.Value.TokenManager) as IDictionary;
+
+        // Wipe old data
+        Variables = new();
+        LocalScopes = new();
 
         GlobalScope = new Scope("Global", ++VariableReference, false)
         {
@@ -267,6 +223,82 @@ public class DebugAdapter : DebugAdapterBase
 
             LocalScopes.Add(ContentPackToStackFrame[scope], new() { GlobalScope, localScope, dynamicScope });
         }
+
+
+        foreach (var filename in Breakpoints.Keys)
+        {
+            foreach ((var patch, var patchEntry) in Breakpoints[filename])
+            {
+                if (!PatchToStackFrame.TryGetValue(patch, out var stackFrameId))
+                {
+                    continue;
+                }
+                
+                var usedTokens = new Scope()
+                {
+                    Name = "Consumed Tokens",
+                    VariablesReference = ++VariableReference,
+                };
+                Variables[usedTokens.VariablesReference] = new();
+                var patchFieldTokens = new Scope()
+                {
+                    Name = "Patch Field Tokens",
+                    VariablesReference = ++VariableReference,
+                };
+                Variables[patchFieldTokens.VariablesReference] = new();
+                var customLocalTokens = new Scope()
+                {
+                    Name = "Local Tokens",
+                    VariablesReference = ++VariableReference,
+                };
+                Variables[customLocalTokens.VariablesReference] = new();
+                var inheritedLocalTokens = new Scope()
+                {
+                    Name = "Inherited Local Tokens",
+                    VariablesReference = ++VariableReference,
+                };
+                Variables[inheritedLocalTokens.VariablesReference] = new();
+                LocalScopes[stackFrameId] = new() { usedTokens, patchFieldTokens };
+
+                var patchFieldTokensContext = typeof(Patch).GetField("PatchFieldTokensContext", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(patch) as LocalContext;
+                foreach (var token in patchFieldTokensContext.GetTokens(false))
+                {
+                    PopulateToken(token, patchFieldTokens.VariablesReference);
+                }
+                var customLocalFieldTokensContext = typeof(Patch).GetField("CustomLocalTokensContext", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(patch) as LocalContext;
+                if (customLocalFieldTokensContext != null)
+                {
+                    foreach (var token in patchFieldTokensContext.GetTokens(false))
+                    {
+                        PopulateToken(token, customLocalTokens.VariablesReference);
+                    }
+                    LocalScopes[stackFrameId].Add(customLocalTokens);
+                }
+                var inheritedLocalTokensContext = typeof(Patch).GetField("InheritedLocalTokensContext", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(patch) as LocalContext;
+                if (inheritedLocalTokensContext != null)
+                {
+                    foreach (var token in inheritedLocalTokensContext.GetTokens(false))
+                    {
+                        PopulateToken(token, inheritedLocalTokens.VariablesReference);
+                    }
+                    LocalScopes[stackFrameId].Add(inheritedLocalTokens);
+                }
+
+                var useContext = customLocalFieldTokensContext ?? patchFieldTokensContext;
+                foreach (var tokenName in patch.GetTokensUsed())
+                {
+                    var token = useContext.GetToken(tokenName, false);
+                    if (token != null)
+                    {
+                        PopulateToken(token, usedTokens.VariablesReference);
+                    }
+                    else
+                    {
+                        Variables[usedTokens.VariablesReference].Add(new Variable(tokenName, "<not loaded>", 0));
+                    }
+                }
+            }
+        }
     }
 
     protected override InitializeResponse HandleInitializeRequest(InitializeArguments args)
@@ -275,6 +307,7 @@ public class DebugAdapter : DebugAdapterBase
         return new InitializeResponse()
         {
             //SupportsEvaluateForHovers = true,
+
             SupportsCompletionsRequest = true,
             SupportsConfigurationDoneRequest = true,
         };
@@ -312,15 +345,17 @@ public class DebugAdapter : DebugAdapterBase
                 if (request.Line >= patchentry.Debugger_LineNumberRange.StartLineNumber && request.Line <= patchentry.Debugger_LineNumberRange.EndLineNumber)
                 {
                     foundBreakpoint = true;
-                    breakpoints.Add(new Breakpoint()
+                    if (Breakpoints[arguments.Source.Path].TryAdd(patch, patchentry))
                     {
-                        Verified = true,
-                        Line = patchentry.Debugger_LineNumberRange.StartLineNumber,
-                        Column = patchentry.Debugger_LineNumberRange.StartLineColumn,
-                        EndLine = patchentry.Debugger_LineNumberRange.EndLineNumber,
-                        EndColumn = patchentry.Debugger_LineNumberRange.EndLineColumn
-                    });
-                    Breakpoints[arguments.Source.Path].Add(patch, patchentry);
+                        breakpoints.Add(new Breakpoint()
+                        {
+                            Verified = true,
+                            Line = patchentry.Debugger_LineNumberRange.StartLineNumber,
+                            Column = patchentry.Debugger_LineNumberRange.StartLineColumn,
+                            EndLine = patchentry.Debugger_LineNumberRange.EndLineNumber,
+                            EndColumn = patchentry.Debugger_LineNumberRange.EndLineColumn
+                        });
+                    }
                 }
             }
             if (!foundBreakpoint)
@@ -331,6 +366,10 @@ public class DebugAdapter : DebugAdapterBase
                 });
             }
         }
+
+        Protocol.SendEvent(new InvalidatedEvent() { Areas = new() { InvalidatedAreas.All } });
+        Protocol.SendEvent(new StoppedEvent(StoppedEvent.ReasonValue.Entry) { Description = "Debug View", AllThreadsStopped = true, PreserveFocusHint = true });
+
         return new SetBreakpointsResponse(breakpoints);
     }
 
@@ -385,9 +424,43 @@ public class DebugAdapter : DebugAdapterBase
     }
     protected override EvaluateResponse HandleEvaluateRequest(EvaluateArguments arguments)
     {
-        // TODO: Do something?
+        if (arguments.FrameId != null)
+        {
+            (var patch, _) = PatchToStackFrame.FirstOrDefault(row => row.Value == arguments.FrameId);
+            var customLocalFieldTokensContext = typeof(Patch).GetField("CustomLocalTokensContext", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(patch) as LocalContext;
+            var patchFieldTokensContext = typeof(Patch).GetField("PatchFieldTokensContext", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(patch) as LocalContext;
+
+            var useContext = customLocalFieldTokensContext ?? patchFieldTokensContext;
+
+            TokenString? tokenStr = null;
+            try
+            {
+                tokenStr = new TokenString(Lexer.Instance.ParseBits(arguments.Expression, impliedBraces: true), useContext, patch.Path.With("Debugger Expression"));
+            }
+            catch (LexFormatException ex)
+            {
+                //this.Monitor.Log($"Can't parse that token value: {ex.Message}", LogLevel.Error);
+                //return;
+            }
+            catch (InvalidOperationException outerEx) when (outerEx.InnerException is LexFormatException ex)
+            {
+                //this.Monitor.Log($"Can't parse that token value: {ex.Message}", LogLevel.Error);
+               // return;
+            }
+            catch (Exception ex)
+            {
+                //this.Monitor.Log($"Can't parse that token value: {ex}", LogLevel.Error);
+                //return;
+            }
+
+            return new EvaluateResponse()
+            {
+                Result = tokenStr?.ToString()
+            };
+        }
         return new EvaluateResponse()
         {
+            
         };
     }
 
@@ -398,7 +471,7 @@ public class DebugAdapter : DebugAdapterBase
 
     internal void UpdateContext()
     {
-        //PopulateVariables();
+        PopulateVariables();
         Protocol.SendEvent(new InvalidatedEvent() { Areas = new() { InvalidatedAreas.Variables } });
     }
 }
