@@ -86,15 +86,22 @@ public class ModEntry : Mod
             tooltip: () => "This sets a threshold in bytes where maps below this size will be stored in-memory for faster loading"
         );
 
-        configMenu.AddSectionTitle(mod: this.ModManifest, text: () => "Modded Image Cache", tooltip: () => "This is for optimising image loads by keeping them in-memory to reduce file io costs");
+        configMenu.AddSectionTitle(mod: this.ModManifest, text: () => "Modded Image Cache", tooltip: () => "This is for optimizing image loads by keeping them in-memory to reduce file io costs");
 
-        configMenu.AddBoolOption(
-            mod: this.ModManifest,
-            name: () => "Enable In-memory image cache",
-            getValue: () => ModEntry.Config.EnableImageCache,
-            setValue: value => ModEntry.Config.EnableImageCache = value,
-            tooltip: () => "This enables the functionality of having mod images cached so that they don't read from filesystem multiple times"
-        );
+        if (Helper.ModRegistry.IsLoaded("aurpine.ClearGlasses"))
+        {
+            configMenu.AddParagraph(this.ModManifest, () => "This functionality is disabled when Clear Glasses is installed, as it has a similar image cache mechanism that is incompatible with this one");
+        }
+        else
+        {
+            configMenu.AddBoolOption(
+                mod: this.ModManifest,
+                name: () => "Enable In-memory image cache",
+                getValue: () => ModEntry.Config.EnableImageCache,
+                setValue: value => ModEntry.Config.EnableImageCache = value,
+                tooltip: () => "This enables the functionality of having mod images cached so that they don't read from filesystem multiple times"
+            );
+        }
 
         configMenu.AddSectionTitle(mod: this.ModManifest, text: () => "Other", tooltip: () => "This is for misc changes that aren't large enough for a standalone section");
         configMenu.AddBoolOption(

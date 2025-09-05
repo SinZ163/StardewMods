@@ -7,6 +7,6 @@ internal class ModConfig
 
     public bool EnableTBinSave { get; set; } = true;
     public bool EnableTBinLoad { get; set; } = true;
-    public bool EnableImageCache { get; set; } = false;
+    public bool EnableImageCache { get; set; } = true;
     public int MapInMemoryThreshold { get; set; } = 0;
 }

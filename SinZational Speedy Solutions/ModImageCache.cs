@@ -18,6 +18,11 @@ internal static class ModImageCache
         ModImageCache.helper = helper;
         ModImageCache.monitor = monitor;
 
+        if (helper.ModRegistry.IsLoaded("aurpine.ClearGlasses"))
+        {
+            return;
+        }
+
         harmony.Patch(
             AccessTools.Method(typeof(ModContentManager), "LoadRawImageData"),
             prefix: new HarmonyMethod(AccessTools.Method(typeof(ModImageCache), nameof(ModContentManager__LoadRawImageData__Prefix))),
