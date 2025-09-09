@@ -1,6 +1,8 @@
 ﻿using HarmonyLib;
+using Microsoft.Xna.Framework.Audio;
 using StardewModdingAPI;
 using StardewValley;
+using StardewValley.Audio;
 using StardewValley.GameData;
 
 namespace SinZ.SpeedySolutions
@@ -10,6 +12,8 @@ namespace SinZ.SpeedySolutions
         private static Harmony harmony;
         private static IModHelper helper;
         private static IMonitor monitor;
+
+        private static string SoundBankLock = "SoundBankLock";
 
         // Deliberately *not* respecting AssetInvalidated method as needs the *old* copy during propagation phase
         private static Dictionary<string, AudioCueData>? CurrentAudioCache;
@@ -21,8 +25,36 @@ namespace SinZ.SpeedySolutions
             AudioCueModifications.helper = helper;
             AudioCueModifications.monitor = monitor;
             helper.Events.Content.AssetReady += Content_AssetReady;
+            harmony.Patch(AccessTools.Method(typeof(SoundBankWrapper), nameof(SoundBankWrapper.AddCue)), prefix: new HarmonyMethod(typeof(AudioCueModifications).GetMethod(nameof(SoundBankWrapper__AddCue__Prefix))));
 
-            harmony.Patch(AccessTools.Method(typeof(StardewValley.Audio.AudioCueModificationManager), nameof(StardewValley.Audio.AudioCueModificationManager.ApplyCueModification)), prefix: new HarmonyMethod(typeof(AudioCueModifications).GetMethod(nameof(AudioCueModificationManager__ApplyCueModification__Prefix))));
+            harmony.Patch(AccessTools.Method(typeof(AudioCueModificationManager), nameof(AudioCueModificationManager.ApplyAllCueModifications)), prefix: new HarmonyMethod(typeof(AudioCueModifications).GetMethod(nameof(AudioCueModificationManager__ApplyCueModifications__Prefix))));
+
+            harmony.Patch(AccessTools.Method(typeof(AudioCueModificationManager), nameof(AudioCueModificationManager.ApplyCueModification)), prefix: new HarmonyMethod(typeof(AudioCueModifications).GetMethod(nameof(AudioCueModificationManager__ApplyCueModification__Prefix))));
+        }
+
+        public static bool SoundBankWrapper__AddCue__Prefix(CueDefinition definition, SoundBank ___soundBank)
+        {
+            if (!ModEntry.Config.EnableAudioCueModificationParallelization) return true;
+            
+            lock(SoundBankLock)
+            {
+                ___soundBank.AddCue(definition);
+            }
+            
+            return false;
+        }
+
+        public static bool AudioCueModificationManager__ApplyCueModifications__Prefix(AudioCueModificationManager __instance)
+        {
+            if (!ModEntry.Config.EnableAudioCueModificationParallelization) return true;
+            foreach (string key in __instance.cueModificationData.Keys)
+            {
+                Task.Run(() =>
+                {
+                    __instance.ApplyCueModification(key);
+                });
+            }
+            return false;
         }
 
         private static void Content_AssetReady(object? sender, StardewModdingAPI.Events.AssetReadyEventArgs e)

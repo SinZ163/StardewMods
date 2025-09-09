@@ -45,6 +45,13 @@ public class ModEntry : Mod
             setValue: value => ModEntry.Config.EnableAudioCueModificationCache = value,
             tooltip: () => "This tracks changes to the Data/AudioChanges asset and suppresses reloading of audio cues that were previously loaded"
         );
+        configMenu.AddBoolOption(
+            mod: this.ModManifest,
+            name: () => "Audio Cue Modification Parallelization",
+            getValue: () => ModEntry.Config.EnableAudioCueModificationParallelization,
+            setValue: value => ModEntry.Config.EnableAudioCueModificationParallelization = value,
+            tooltip: () => "This will make audio cue modifications load in parallel in the background"
+        );
 
         configMenu.AddSectionTitle(mod: this.ModManifest, text: () => "TBin Map Cache");
         configMenu.AddParagraph(
