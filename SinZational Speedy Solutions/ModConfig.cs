@@ -3,7 +3,7 @@
 internal class ModConfig
 {
     public bool EnableAudioCueModificationCache { get; set; } = true;
-    public bool EnableAudioCueModificationParallelization { get; set; } = false;
+    public bool EnableAudioCueModificationParallelization { get; set; } = true;
     public bool EnableSlowGameLocationLoaderBypass { get; set; } = true;
 
     public bool EnableTBinSave { get; set; } = true;

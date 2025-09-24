@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using Microsoft.Xna.Framework.Audio;
 using StardewModdingAPI;
 using StardewValley;
@@ -72,7 +72,8 @@ namespace SinZ.SpeedySolutions
 
             if (PreviousAudioCache == null) return true;
             if (CurrentAudioCache == null) return true;
-            monitor.Log("Evaluating cue modification for " + key);
+            // TODO: Find a way to threadsafe print these messages
+            //monitor.Log("Evaluating cue modification for " + key);
             if (!PreviousAudioCache.TryGetValue(key, out var oldValue))
             {
                 return true;
@@ -93,7 +94,7 @@ namespace SinZ.SpeedySolutions
                 return true;
             }
             // Everything is the same, don't need to reapply the edit
-            monitor.Log("Skipped reapplying cue modification for " + key);
+            //monitor.Log("Skipped reapplying cue modification for " + key);
             return false;
         }
     }

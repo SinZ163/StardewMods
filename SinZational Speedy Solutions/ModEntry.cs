@@ -116,7 +116,7 @@ public class ModEntry : Mod
             name: () => "Slow mapLoader Bypass",
             getValue: () => ModEntry.Config.EnableSlowGameLocationLoaderBypass,
             setValue: value => ModEntry.Config.EnableSlowGameLocationLoaderBypass = value,
-            tooltip: () => "This bypasses the dedicated mapLoader's that Town and Farmhouse use, so they will remain cached and loaded when leaving and re-entering those locations"
+            tooltip: () => "This bypasses the dedicated mapLoader's that Town uses, so it will remain cached and loaded when leaving and re-entering the location"
         );
 
     }
@@ -131,7 +131,6 @@ public static class GenericPatches
         GenericPatches.helper = helper;
 
         harmony.Patch(AccessTools.Method(typeof(StardewValley.Locations.Town), "getMapLoader"), prefix: new HarmonyMethod(typeof(GenericPatches).GetMethod(nameof(SlowGameLocation__getMapLoader__Prefix))));
-        harmony.Patch(AccessTools.Method(typeof(StardewValley.Locations.FarmHouse), "getMapLoader"), prefix: new HarmonyMethod(typeof(GenericPatches).GetMethod(nameof(SlowGameLocation__getMapLoader__Prefix))));
     }
 
     public static bool SlowGameLocation__getMapLoader__Prefix(ref LocalizedContentManager __result)
