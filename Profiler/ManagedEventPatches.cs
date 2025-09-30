@@ -36,6 +36,16 @@ namespace Profiler
                 targetClass.GetMethod("Raise", new Type[] { typeof(Action<,>).MakeGenericType(modMetadata, typeof(Action<>).MakeGenericType(typeof(TimeChangedEventArgs))) }),
                 transpiler: new HarmonyMethod(typeof(ManagedEventPatches), nameof(Raise__Transpiler))
             );
+
+            harmony.Patch(
+                Type.GetType("StardewModdingAPI.Framework.ContentCoordinator,StardewModdingAPI").GetMethod("Dispose"),
+                postfix: new HarmonyMethod(typeof(ManagedEventPatches), nameof(ContentCoordinator__Dispose__Postfix))
+            );
+        }
+
+        private static void ContentCoordinator__Dispose__Postfix()
+        {
+            API.Flush();
         }
 
         public static IEnumerable<CodeInstruction> Raise__Transpiler(ILGenerator generator, IEnumerable<CodeInstruction> instructions)

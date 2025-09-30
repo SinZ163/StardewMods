@@ -15,7 +15,7 @@ namespace Profiler
 {
     public record EventMetadata(string ModId, string EventType, string Details, List<object> InnerDetails, string Type = "Base")
     {
-#if DEBUG
+#if false
         [JsonIgnore]
         public Guid InstanceId { get; init; } = Guid.NewGuid();
 #endif
@@ -24,8 +24,14 @@ namespace Profiler
     public record EventDurationMetadata(string ModId, string EventType, string Details, double Duration, List<object> InnerDetails) : EventMetadata(ModId, EventType, Details, InnerDetails, "Duration");
     public record EventTraceMetadata(string ModId, string EventType, string Details, string ExceptionType, string ExceptionMessage, List<object> InnerDetails) : EventMetadata(ModId, EventType, Details, InnerDetails, "Trace");
 
+    public record WaterfallEvent(string ModId, string EventType, Dictionary<string, double> Timings, Dictionary<string,string> Details);
+
+    internal record MetricEvent(string ModId, string MetricName, double OccuredAt, double Value);
+
     public interface IProfilerAPI
     {
+        public TimeSpan GetTime();
+
         public void Push(EventMetadata eventDetails, bool important = false);
         public void Pop(Func<EventMetadata, EventMetadata> modifier);
         public void Pop();
@@ -33,6 +39,8 @@ namespace Profiler
         public IDisposable RecordSection(string ModId, string EventType, string Details);
 
         public MethodBase AddGenericDurationPatch(string type, string method, List<string>? genericArgs = null, string detailsType = null);
+
+        public void AddMetric(string modId, string metric, double value, double? occuredAt);
 
         public HarmonyMethod GenericDurationPrefix { get; }
         public HarmonyMethod GenericDurationPrefixWithArgs { get; }
@@ -79,7 +87,10 @@ namespace Profiler
         internal ConcurrentStack<EventEntry> EventMetadata { get; private set; }
         internal bool EventHasImportance { get; private set; }
 
-        internal ProfilerAPI(ModConfig config, Harmony harmony, Stopwatch timer, IMonitor monitor)
+        private ConcurrentQueue<WaterfallEvent> WaterfallEvents { get; } = new ConcurrentQueue<WaterfallEvent>();
+        private ConcurrentQueue<MetricEvent> MetricValues { get; } = new ConcurrentQueue<MetricEvent>();
+
+        internal ProfilerAPI(ModConfig config, Harmony harmony, Stopwatch timer, IMonitor monitor, IModHelper helper)
         {
             Config = config;
             Harmony = harmony;
@@ -88,12 +99,71 @@ namespace Profiler
 
             EventMetadata = new();
             EventHasImportance = false;
+
+            helper.Events.GameLoop.OneSecondUpdateTicked += GameLoop_OneSecondUpdateTicked;
         }
-        public HarmonyMethod GenericDurationPrefix => new HarmonyMethod(typeof(PublicPatches).GetMethod(nameof(PublicPatches.GenericDurationPrefix)));
-        public HarmonyMethod GenericDurationPrefixWithArgs => new HarmonyMethod(typeof(PublicPatches).GetMethod(nameof(PublicPatches.GenericDurationPrefixWithArgs)));
-        public HarmonyMethod GenericDurationPostfix => new HarmonyMethod(typeof(PublicPatches).GetMethod(nameof(PublicPatches.GenericDurationPostfix)));
-        public HarmonyMethod GenericTraceFinalizer => new HarmonyMethod(typeof(PublicPatches).GetMethod(nameof(PublicPatches.GenericTraceFinalizer)));
-        public HarmonyMethod GenericTraceFinalizerWithArgs => new HarmonyMethod(typeof(PublicPatches).GetMethod(nameof(PublicPatches.GenericTraceFinalizerWithArgs)));
+
+        public TimeSpan GetTime()
+        {
+            return Timer.Elapsed;
+        }
+
+        public void Flush()
+        {
+            WriteWaterfall();
+            WriteMetrics();
+        }
+
+        private void GameLoop_OneSecondUpdateTicked(object sender, StardewModdingAPI.Events.OneSecondUpdateTickedEventArgs e)
+        {
+            if (e.IsMultipleOf(60 * 60) && !WaterfallEvents.IsEmpty)
+            {
+                WriteWaterfall();
+            }
+
+            if (e.IsMultipleOf(60 * 30) && !MetricValues.IsEmpty)
+            {
+                WriteMetrics();
+            }
+        }
+
+        private void WriteMetrics()
+        {
+            var output = new List<MetricEvent>();
+            while (MetricValues.TryDequeue(out var eventEntry))
+            {
+                output.Add(eventEntry);
+            }
+
+            Monitor.Log("[RawMetrics] " + JsonSerializer.Serialize(output));
+        }
+
+        private void WriteWaterfall()
+        {
+            var output = new List<WaterfallEvent>();
+            while (WaterfallEvents.TryDequeue(out var eventEntry))
+            {
+                output.Add(eventEntry);
+            }
+
+            Monitor.Log("[RawWaterfall] " + JsonSerializer.Serialize(output));
+        }
+
+        public void AddWaterfallEvent(WaterfallEvent entry)
+        {
+            WaterfallEvents.Enqueue(entry);
+        }
+
+        public void AddMetric(string modId, string metric, double value, double? occuredAt)
+        {
+            MetricValues.Enqueue(new MetricEvent(modId, metric, occuredAt ?? Timer.Elapsed.TotalMilliseconds, value));
+        }
+
+        public HarmonyMethod GenericDurationPrefix => new(typeof(PublicPatches).GetMethod(nameof(PublicPatches.GenericDurationPrefix)));
+        public HarmonyMethod GenericDurationPrefixWithArgs => new(typeof(PublicPatches).GetMethod(nameof(PublicPatches.GenericDurationPrefixWithArgs)));
+        public HarmonyMethod GenericDurationPostfix => new(typeof(PublicPatches).GetMethod(nameof(PublicPatches.GenericDurationPostfix)));
+        public HarmonyMethod GenericTraceFinalizer => new(typeof(PublicPatches).GetMethod(nameof(PublicPatches.GenericTraceFinalizer)));
+        public HarmonyMethod GenericTraceFinalizerWithArgs => new(typeof(PublicPatches).GetMethod(nameof(PublicPatches.GenericTraceFinalizerWithArgs)));
 
         public void Write(EventMetadata eventDetails)
         {
@@ -123,7 +193,7 @@ namespace Profiler
 
         public void Push(EventMetadata eventDetails, bool important = false)
         {
-#if DEBUG
+#if false
             Monitor.Log($"${eventDetails} push");
 #endif
             EventMetadata.Push(new(Timer.Elapsed.TotalMilliseconds, eventDetails));
@@ -138,7 +208,7 @@ namespace Profiler
             if (EventMetadata.TryPop(out var metadataPair))
             {
                 var metadata = modifier(metadataPair.Entry);
-#if DEBUG
+#if false
                 Monitor.Log($"${metadata} pop (modifier)");
 #endif
                 Write(metadataPair.At, metadata);
@@ -148,7 +218,7 @@ namespace Profiler
         {
             if (EventMetadata.TryPop(out var metadataPair))
             {
-#if DEBUG
+#if false
                 Monitor.Log($"${metadataPair.Entry} pop");
 #endif
                 Write(metadataPair.At, metadataPair.Entry);

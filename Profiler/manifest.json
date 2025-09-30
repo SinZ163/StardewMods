@@ -1,10 +1,20 @@
-﻿{
+{
+  /*
+   | This file is automatically updated by ModManifestBuilder
+   | when the project is compiled.
+   | 
+   | Changes made to this file may be overwritten.
+   | 
+   */
+  "$schema": "https://smapi.io/schemas/manifest.json",
+  "UniqueID": "SinZ.Profiler",
   "Name": "Profiler",
   "Author": "SinZ",
-  "Version": "2.1.0-alpha3",
-  "Description": "Logs when the game loop goes between states and when event handlers take too long",
-  "UniqueID": "SinZ.Profiler",
+  "Version": "3.0.0-alpha5",
+  "Description": "A mod that collects telemetry on game performancce for further analysis",
+  "MinimumApiVersion": "4.1.3",
   "EntryDll": "Profiler.dll",
-  "MinimumApiVersion": "3.15.0",
-  "UpdateKeys": [ "Nexus:12135" ]
+  "UpdateKeys": [
+    "Nexus:12135"
+  ]
 }

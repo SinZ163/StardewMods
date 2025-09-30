@@ -3,11 +3,23 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <EnableHarmony>true</EnableHarmony>
+		<LangVersion>latest</LangVersion>
+  </PropertyGroup>
+	
+  <PropertyGroup>
+    <Name>Profiler</Name>
+    <Authors>SinZ</Authors>
+    <Version>3.0.0-alpha5</Version>
+    <Description>A mod that collects telemetry on game performancce for further analysis</Description>
+    <UniqueId>SinZ.Profiler</UniqueId>
+    <MinimumApiVersion>4.1.3</MinimumApiVersion>
+    <UpdateKeys>Nexus:12135</UpdateKeys>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.3.1" />
     <Reference Include="Newtonsoft.Json" HintPath="$(GamePath)\smapi-internal\Newtonsoft.Json.dll" />
+    <PackageReference Include="Leclair.Stardew.ModManifestBuilder" Version="2.1.0" />
   </ItemGroup>
 
 </Project>

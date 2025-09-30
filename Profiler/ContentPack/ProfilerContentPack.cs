@@ -27,6 +27,7 @@ namespace Profiler
         public string? Type { get; set;  }
         public string? TargetType { get; set;  }
         public string? TargetMethod { get; set; }
+        public List<string> TargetMethodGenericArguments { get; set; } = new();
 
         public string? ConditionalMod { get; set; }
 
@@ -43,7 +44,7 @@ namespace Profiler
         public string? Name { get; set; }
         public int? Index { get; set; }
 
-        public bool? Supress { get; set; }
+        public bool? Suppress { get; set; }
 
         [JsonConstructor]
         public ProfilerContentPackDetailEntry()
